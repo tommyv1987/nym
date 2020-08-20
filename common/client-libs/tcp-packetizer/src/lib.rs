@@ -66,11 +66,15 @@ impl OrderedMessageBuffer {
         }
     }
 
+    /// Writes a fragment to the buffer. Fragments are sort on insertion, so
+    /// that later on multiple reads for incomplete sequences don't result in
+    /// useless sort work.
     pub fn write(&mut self, fragment: Fragment) {
         self.fragments.push(fragment.clone());
         OrderedMessageBuffer::insertion_sort(&mut self.fragments);
     }
 
+    /// Reads an ordered sequence of bytes out of the buffer.
     pub fn read(&mut self) -> Option<Vec<u8>> {
         let data = self
             .fragments
