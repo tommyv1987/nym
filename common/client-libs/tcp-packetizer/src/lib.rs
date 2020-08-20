@@ -117,14 +117,15 @@ mod test_chunking_and_reassembling {
             let first_bytes = vec![1, 2, 3, 4];
             let second_bytes = vec![5, 6, 7, 8];
 
-            let first_frags = packetizer.packetize(first_bytes);
-            assert_eq!(1, first_frags.len());
-            let first_indexes: Vec<usize> = first_frags.iter().map(|frag| frag.index).collect();
+            let first_fragments = packetizer.packetize(first_bytes);
+            assert_eq!(1, first_fragments.len());
+            let first_indexes: Vec<usize> = first_fragments.iter().map(|frag| frag.index).collect();
             assert_eq!(first_indexes, vec![0]);
 
-            let second_frags = packetizer.packetize(second_bytes);
-            assert_eq!(1, second_frags.len());
-            let second_indexes: Vec<usize> = second_frags.iter().map(|frag| frag.index).collect();
+            let second_fragments = packetizer.packetize(second_bytes);
+            assert_eq!(1, second_fragments.len());
+            let second_indexes: Vec<usize> =
+                second_fragments.iter().map(|frag| frag.index).collect();
             assert_eq!(second_indexes, vec![1]);
         }
     }
