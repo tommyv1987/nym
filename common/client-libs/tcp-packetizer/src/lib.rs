@@ -108,11 +108,11 @@ mod test_chunking_and_reassembling {
     mod when_input_bytes_are_empty {}
 
     #[cfg(test)]
-    mod sequence_numbers {
+    mod sequence_index_numbers {
         use super::*;
 
         #[test]
-        fn increase_when_packetizing() {
+        fn increase_as_fragments_are_sent() {
             let mut packetizer = OrderedFragmentSender::new(4);
             let first_bytes = vec![1, 2, 3, 4];
             let second_bytes = vec![5, 6, 7, 8];
@@ -131,7 +131,7 @@ mod test_chunking_and_reassembling {
     }
 
     #[cfg(test)]
-    mod packet_chunking {
+    mod sending_ordered_fragments_for_received_bytes {
         use super::*;
 
         #[cfg(test)]
