@@ -54,14 +54,14 @@ impl OrderedFragmentSender {
     }
 }
 
-/// The `OrderedMessageBuffer` stores messages and emits them in order
-pub struct OrderedMessageBuffer {
+/// The `OrderedFragmentBuffer` stores messages and emits them in order
+pub struct OrderedFragmentBuffer {
     fragments: Vec<Fragment>,
 }
 
-impl OrderedMessageBuffer {
-    pub fn new() -> OrderedMessageBuffer {
-        OrderedMessageBuffer {
+impl OrderedFragmentBuffer {
+    pub fn new() -> OrderedFragmentBuffer {
+        OrderedFragmentBuffer {
             fragments: Vec::new(),
         }
     }
@@ -71,7 +71,7 @@ impl OrderedMessageBuffer {
     /// useless sort work.
     pub fn write(&mut self, fragment: Fragment) {
         self.fragments.push(fragment.clone());
-        OrderedMessageBuffer::insertion_sort(&mut self.fragments);
+        OrderedFragmentBuffer::insertion_sort(&mut self.fragments);
     }
 
     /// Reads an ordered sequence of bytes out of the buffer.
@@ -184,7 +184,7 @@ mod test_chunking_and_reassembling {
 
         #[test]
         fn test_reads_returns_original_bytes_and_resets_buffer() {
-            let mut buffer = OrderedMessageBuffer::new();
+            let mut buffer = OrderedFragmentBuffer::new();
 
             let first_frag = Fragment {
                 data: vec![1, 2, 3, 4],
@@ -206,7 +206,7 @@ mod test_chunking_and_reassembling {
 
         #[test]
         fn test_multiple_adds_stacks_up_bytes_in_the_buffer() {
-            let mut buffer = OrderedMessageBuffer::new();
+            let mut buffer = OrderedFragmentBuffer::new();
 
             let first_frag = Fragment {
                 data: vec![1, 2, 3, 4],
@@ -225,7 +225,7 @@ mod test_chunking_and_reassembling {
 
         #[test]
         fn test_out_of_order_adds_results_in_ordered_byte_vector() {
-            let mut buffer = OrderedMessageBuffer::new();
+            let mut buffer = OrderedFragmentBuffer::new();
 
             let first_frag = Fragment {
                 data: vec![1, 2, 3, 4],
