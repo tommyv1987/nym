@@ -1,31 +1,34 @@
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Fragment {
     data: Vec<u8>,
     index: usize,
 }
 
 pub struct Packetizer {
-    fragment_size: usize,
+    fragment_max_size: usize,
     next_index: usize,
 }
 
 impl Packetizer {
-    pub fn new(fragment_size: usize) -> Packetizer {
+    pub fn new(fragment_max_size: usize) -> Packetizer {
         Packetizer {
-            fragment_size,
+            fragment_max_size,
             next_index: 0,
         }
     }
 
     pub fn packetize(&mut self, input: Vec<u8>) -> Vec<Fragment> {
-        let data = input;
-        let sequence_number = self.next_index;
-        let frag = vec![Fragment {
-            data,
-            index: sequence_number,
-        }];
-        self.next_index = self.next_index + 1;
-        frag
+        input
+            .chunks(self.fragment_max_size)
+            .map(|frag| {
+                let f = Fragment {
+                    data: frag.to_vec(),
+                    index: self.next_index,
+                };
+                self.next_index = self.next_index + 1;
+                f
+            })
+            .collect()
     }
 }
 
@@ -53,28 +56,75 @@ mod test_chunking_and_reassembling {
 
     mod when_input_bytes_are_empty {}
 
-    #[test]
-    fn test_chunk_bytes_with_fragment_size_at_byte_length_produces_a_fragment_vec_with_a_sequence_number(
-    ) {
-        let mut packetizer = Packetizer::new(4);
-        let first_bytes: Vec<u8> = vec![1, 2, 3, 4];
-        let second_bytes: Vec<u8> = vec![5, 6, 7, 8];
-        let third_bytes: Vec<u8> = vec![9, 10, 11, 12];
+    #[cfg(test)]
+    mod sequence_numbers {
+        use super::*;
 
-        let first_frags = packetizer.packetize(first_bytes);
-        assert_eq!(1, first_frags.len());
-        let first_indexes: Vec<usize> = first_frags.iter().map(|frag| frag.index).collect();
-        assert_eq!(first_indexes, vec![0]);
+        #[test]
+        fn increase_when_packetizing() {
+            let mut packetizer = Packetizer::new(4);
+            let first_bytes = vec![1, 2, 3, 4];
+            let second_bytes = vec![5, 6, 7, 8];
 
-        let second_frags = packetizer.packetize(second_bytes);
-        assert_eq!(1, second_frags.len());
-        let second_indexes: Vec<usize> = second_frags.iter().map(|frag| frag.index).collect();
-        assert_eq!(second_indexes, vec![1]);
+            let first_frags = packetizer.packetize(first_bytes);
+            assert_eq!(1, first_frags.len());
+            let first_indexes: Vec<usize> = first_frags.iter().map(|frag| frag.index).collect();
+            assert_eq!(first_indexes, vec![0]);
 
-        let third_frags = packetizer.packetize(third_bytes);
-        assert_eq!(1, third_frags.len());
-        let third_indexes: Vec<usize> = third_frags.iter().map(|frag| frag.index).collect();
-        assert_eq!(third_indexes, vec![2]);
+            let second_frags = packetizer.packetize(second_bytes);
+            assert_eq!(1, second_frags.len());
+            let second_indexes: Vec<usize> = second_frags.iter().map(|frag| frag.index).collect();
+            assert_eq!(second_indexes, vec![1]);
+        }
+    }
+
+    #[cfg(test)]
+    mod packet_chunking {
+        use super::*;
+
+        #[cfg(test)]
+        mod when_max_fragment_size_equals_bytes_supplied {
+            use super::*;
+
+            #[test]
+            fn produces_a_vec_with_a_single_fragment() {
+                let mut packetizer = Packetizer::new(4);
+                let bytes: Vec<u8> = vec![1, 2, 3, 4];
+                let output = packetizer.packetize(bytes);
+                assert_eq!(1, output.len());
+                assert_eq!(0, output.first().unwrap().index);
+            }
+        }
+
+        #[cfg(test)]
+        mod when_max_size_is_greater_than_bytes_supplied {
+            use super::*;
+
+            #[test]
+            fn produces_a_vec_with_a_single_fragment() {
+                let mut packetizer = Packetizer::new(5);
+                let bytes: Vec<u8> = vec![1, 2, 3, 4];
+                let output = packetizer.packetize(bytes);
+                assert_eq!(1, output.len());
+                assert_eq!(0, output.first().unwrap().index);
+            }
+        }
+
+        #[cfg(test)]
+        mod when_max_size_is_less_than_bytes_supplied {
+            use super::*;
+
+            #[test]
+            fn produces_a_vec_with_modulo_fragments() {
+                let mut packetizer = Packetizer::new(3);
+                let bytes: Vec<u8> = vec![1, 2, 3, 4];
+                let output = packetizer.packetize(bytes);
+                assert_eq!(2, output.len());
+                // check that indexes are correct
+                assert_eq!(0, output[0].index);
+                assert_eq!(1, output[1].index);
+            }
+        }
     }
 
     #[test]
