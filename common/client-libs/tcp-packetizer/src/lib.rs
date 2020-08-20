@@ -137,7 +137,7 @@ mod test_chunking_and_reassembling {
     }
 
     #[test]
-    fn test_reassembling_fragments_produces_original_bytes() {
+    fn test_reads_returns_original_bytes_and_resets_buffer() {
         let mut buffer = OrderedMessageBuffer::new();
 
         let first_frag = Fragment {
