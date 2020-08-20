@@ -3277,6 +3277,9 @@ dependencies = [
 [[package]]
 name = "tcp-packetizer"
 version = "0.1.0"
+dependencies = [
+ "nymsphinx-types",
+]
 
 [[package]]
 name = "tempfile"
