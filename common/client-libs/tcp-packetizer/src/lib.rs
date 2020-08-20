@@ -1,8 +1,30 @@
+use std::cmp::Ordering;
+
 #[derive(Clone, Debug)]
 pub struct Fragment {
     data: Vec<u8>,
     index: usize,
 }
+
+impl Ord for Fragment {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (self.index).cmp(&(other.index))
+    }
+}
+
+impl PartialOrd for Fragment {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Fragment {
+    fn eq(&self, other: &Self) -> bool {
+        (self.index, &self.data) == (other.index, &other.data)
+    }
+}
+
+impl Eq for Fragment {}
 
 pub struct Packetizer {
     fragment_max_size: usize,
@@ -46,6 +68,7 @@ impl OrderedMessageBuffer {
 
     pub fn write(&mut self, fragment: Fragment) {
         self.fragments.push(fragment.clone());
+        OrderedMessageBuffer::insertion_sort(&mut self.fragments);
     }
 
     pub fn read(&mut self) -> Option<Vec<u8>> {
@@ -56,6 +79,21 @@ impl OrderedMessageBuffer {
             .collect();
         self.fragments = Vec::new();
         Some(data)
+    }
+
+    pub fn insertion_sort<T>(values: &mut [T])
+    where
+        T: Ord,
+    {
+        for i in 0..values.len() {
+            for j in (0..i).rev() {
+                if values[j] >= values[j + 1] {
+                    values.swap(j, j + 1);
+                } else {
+                    break;
+                }
+            }
+        }
     }
 }
 
@@ -136,25 +174,68 @@ mod test_chunking_and_reassembling {
         }
     }
 
-    #[test]
-    fn test_reads_returns_original_bytes_and_resets_buffer() {
-        let mut buffer = OrderedMessageBuffer::new();
+    #[cfg(test)]
+    mod reading_from_the_buffer {
+        use super::*;
 
-        let first_frag = Fragment {
-            data: vec![1, 2, 3, 4],
-            index: 0,
-        };
-        let second_frag = Fragment {
-            data: vec![5, 6, 7, 8],
-            index: 1,
-        };
+        #[test]
+        fn test_reads_returns_original_bytes_and_resets_buffer() {
+            let mut buffer = OrderedMessageBuffer::new();
 
-        buffer.write(first_frag);
-        let first_read = buffer.read();
-        assert_eq!(vec![1, 2, 3, 4], first_read.unwrap());
+            let first_frag = Fragment {
+                data: vec![1, 2, 3, 4],
+                index: 0,
+            };
+            let second_frag = Fragment {
+                data: vec![5, 6, 7, 8],
+                index: 1,
+            };
 
-        buffer.write(second_frag);
-        let second_read = buffer.read();
-        assert_eq!(vec![5, 6, 7, 8], second_read.unwrap());
+            buffer.write(first_frag);
+            let first_read = buffer.read();
+            assert_eq!(vec![1, 2, 3, 4], first_read.unwrap());
+
+            buffer.write(second_frag);
+            let second_read = buffer.read();
+            assert_eq!(vec![5, 6, 7, 8], second_read.unwrap());
+        }
+
+        #[test]
+        fn test_multiple_adds_stacks_up_bytes_in_the_buffer() {
+            let mut buffer = OrderedMessageBuffer::new();
+
+            let first_frag = Fragment {
+                data: vec![1, 2, 3, 4],
+                index: 0,
+            };
+            let second_frag = Fragment {
+                data: vec![5, 6, 7, 8],
+                index: 1,
+            };
+
+            buffer.write(first_frag);
+            buffer.write(second_frag);
+            let second_read = buffer.read();
+            assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8], second_read.unwrap());
+        }
+
+        #[test]
+        fn test_out_of_order_adds_results_in_ordered_byte_vector() {
+            let mut buffer = OrderedMessageBuffer::new();
+
+            let first_frag = Fragment {
+                data: vec![1, 2, 3, 4],
+                index: 0,
+            };
+            let second_frag = Fragment {
+                data: vec![5, 6, 7, 8],
+                index: 1,
+            };
+
+            buffer.write(second_frag);
+            buffer.write(first_frag);
+            let read = buffer.read();
+            assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8], read.unwrap());
+        }
     }
 }
