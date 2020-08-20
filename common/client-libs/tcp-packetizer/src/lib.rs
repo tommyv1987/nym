@@ -76,13 +76,17 @@ impl OrderedFragmentBuffer {
 
     /// Reads an ordered sequence of bytes out of the buffer.
     pub fn read(&mut self) -> Option<Vec<u8>> {
-        let data = self
-            .fragments
-            .iter()
-            .flat_map(|frag| frag.data.clone())
-            .collect();
-        self.fragments = Vec::new();
-        Some(data)
+        if self.fragments.is_empty() {
+            return None;
+        } else {
+            let data = self
+                .fragments
+                .iter()
+                .flat_map(|frag| frag.data.clone())
+                .collect();
+            self.fragments = Vec::new();
+            Some(data)
+        }
     }
 
     fn insertion_sort<T>(values: &mut [T])
@@ -180,11 +184,11 @@ mod test_chunking_and_reassembling {
     }
 
     #[cfg(test)]
-    mod reading_from_the_buffer {
+    mod reading_from_and_writing_to_the_buffer {
         use super::*;
 
         #[test]
-        fn test_reads_returns_original_bytes_and_resets_buffer() {
+        fn test_read_when_full_sequence_exists_returns_original_bytes_and_resets_buffer() {
             let mut buffer = OrderedFragmentBuffer::new();
 
             let first_frag = Fragment {
@@ -203,6 +207,9 @@ mod test_chunking_and_reassembling {
             buffer.write(second_frag);
             let second_read = buffer.read();
             assert_eq!(vec![5, 6, 7, 8], second_read.unwrap());
+
+            let empty_read = buffer.read();
+            assert_eq!(None, empty_read);
         }
 
         #[test]
