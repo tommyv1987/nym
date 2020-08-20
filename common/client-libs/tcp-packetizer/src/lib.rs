@@ -32,7 +32,7 @@ impl Packetizer {
     }
 }
 
-/// The `MessageBuffer` stores messages and emits them in order
+/// The `OrderedMessageBuffer` stores messages and emits them in order
 pub struct OrderedMessageBuffer {
     fragments: Vec<Fragment>,
 }
@@ -44,9 +44,18 @@ impl OrderedMessageBuffer {
         }
     }
 
-    pub fn add(&mut self, fragment: Fragment) -> Option<Vec<u8>> {
+    pub fn write(&mut self, fragment: Fragment) {
         self.fragments.push(fragment.clone());
-        Some(fragment.data.clone())
+    }
+
+    pub fn read(&mut self) -> Option<Vec<u8>> {
+        let data = self
+            .fragments
+            .iter()
+            .flat_map(|frag| frag.data.clone())
+            .collect();
+        self.fragments = Vec::new();
+        Some(data)
     }
 }
 
@@ -120,7 +129,7 @@ mod test_chunking_and_reassembling {
                 let bytes: Vec<u8> = vec![1, 2, 3, 4];
                 let output = packetizer.packetize(bytes);
                 assert_eq!(2, output.len());
-                // check that indexes are correct
+                // check that indexes increase properly
                 assert_eq!(0, output[0].index);
                 assert_eq!(1, output[1].index);
             }
@@ -140,10 +149,12 @@ mod test_chunking_and_reassembling {
             index: 1,
         };
 
-        let first_add = buffer.add(first_frag);
-        assert_eq!(vec![1, 2, 3, 4], first_add.unwrap());
+        buffer.write(first_frag);
+        let first_read = buffer.read();
+        assert_eq!(vec![1, 2, 3, 4], first_read.unwrap());
 
-        let second_add = buffer.add(second_frag);
-        assert_eq!(vec![5, 6, 7, 8], second_add.unwrap());
+        buffer.write(second_frag);
+        let second_read = buffer.read();
+        assert_eq!(vec![5, 6, 7, 8], second_read.unwrap());
     }
 }
