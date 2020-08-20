@@ -85,7 +85,7 @@ impl OrderedMessageBuffer {
         Some(data)
     }
 
-    pub fn insertion_sort<T>(values: &mut [T])
+    fn insertion_sort<T>(values: &mut [T])
     where
         T: Ord,
     {
