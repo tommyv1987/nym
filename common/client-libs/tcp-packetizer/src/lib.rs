@@ -26,14 +26,14 @@ impl PartialEq for Fragment {
 
 impl Eq for Fragment {}
 
-pub struct Packetizer {
+pub struct OrderedFragmentSender {
     fragment_max_size: usize,
     next_index: usize,
 }
 
-impl Packetizer {
-    pub fn new(fragment_max_size: usize) -> Packetizer {
-        Packetizer {
+impl OrderedFragmentSender {
+    pub fn new(fragment_max_size: usize) -> OrderedFragmentSender {
+        OrderedFragmentSender {
             fragment_max_size,
             next_index: 0,
         }
@@ -113,7 +113,7 @@ mod test_chunking_and_reassembling {
 
         #[test]
         fn increase_when_packetizing() {
-            let mut packetizer = Packetizer::new(4);
+            let mut packetizer = OrderedFragmentSender::new(4);
             let first_bytes = vec![1, 2, 3, 4];
             let second_bytes = vec![5, 6, 7, 8];
 
@@ -139,7 +139,7 @@ mod test_chunking_and_reassembling {
 
             #[test]
             fn produces_a_vec_with_a_single_fragment() {
-                let mut packetizer = Packetizer::new(4);
+                let mut packetizer = OrderedFragmentSender::new(4);
                 let bytes: Vec<u8> = vec![1, 2, 3, 4];
                 let output = packetizer.packetize(bytes);
                 assert_eq!(1, output.len());
@@ -153,7 +153,7 @@ mod test_chunking_and_reassembling {
 
             #[test]
             fn produces_a_vec_with_a_single_fragment() {
-                let mut packetizer = Packetizer::new(5);
+                let mut packetizer = OrderedFragmentSender::new(5);
                 let bytes: Vec<u8> = vec![1, 2, 3, 4];
                 let output = packetizer.packetize(bytes);
                 assert_eq!(1, output.len());
@@ -167,7 +167,7 @@ mod test_chunking_and_reassembling {
 
             #[test]
             fn produces_a_vec_with_modulo_fragments() {
-                let mut packetizer = Packetizer::new(3);
+                let mut packetizer = OrderedFragmentSender::new(3);
                 let bytes: Vec<u8> = vec![1, 2, 3, 4];
                 let output = packetizer.packetize(bytes);
                 assert_eq!(2, output.len());
