@@ -17,6 +17,7 @@ members = [
     "common/client-libs/directory-client/models",
     "common/client-libs/gateway-client",
     "common/client-libs/mixnet-client",
+    "common/client-libs/tcp-packetizer",
     "common/client-libs/validator-client",
     "common/config",
     "common/crypto",
