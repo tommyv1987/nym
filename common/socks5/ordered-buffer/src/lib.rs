@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd)]
 pub struct Message {
     data: Vec<u8>,
-    index: usize,
+    index: u64,
 }
 
 impl Ord for Message {
@@ -15,7 +15,7 @@ impl Ord for Message {
 /// Assigns sequence numbers to outbound byte vectors. These messages can then
 /// be reassembled into an ordered sequence by the `OrderedMessageSender`.
 pub struct OrderedMessageSender {
-    next_index: usize,
+    next_index: u64,
 }
 
 impl OrderedMessageSender {
@@ -40,7 +40,7 @@ impl OrderedMessageSender {
 /// will be returned - this avoids returning gaps while we wait for the buffer
 /// to fill up with the full sequence.
 pub struct OrderedMessageBuffer {
-    next_index: usize,
+    next_index: u64,
     messages: Vec<Message>,
 }
 
@@ -83,7 +83,7 @@ impl OrderedMessageBuffer {
             self.messages.retain(|message| message.index > index);
 
             // advance the index because we've read stuff up to a new high water mark
-            let high_water = index + contiguous_messages.len() - 1;
+            let high_water = index + contiguous_messages.len() as u64 - 1;
             self.next_index = high_water;
 
             // dig out the bytes from inside the struct
