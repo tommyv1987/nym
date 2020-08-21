@@ -63,6 +63,9 @@ impl OrderedMessageBuffer {
         }
     }
 
+    /// Sorts inserted message fragments for us. We need it in the current
+    /// implementation because we depend on knowing whether the first message is
+    /// at or below the current high water mark when reading.
     fn insertion_sort<T>(values: &mut [T])
     where
         T: Ord,
