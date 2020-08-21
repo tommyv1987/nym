@@ -1,4 +1,4 @@
-use crate::message::Message;
+use crate::message::OrderedMessage;
 
 /// Stores messages and emits them in order.
 ///
@@ -8,7 +8,7 @@ use crate::message::Message;
 #[derive(Debug)]
 pub struct OrderedMessageBuffer {
     next_index: u64,
-    messages: Vec<Message>,
+    messages: Vec<OrderedMessage>,
 }
 
 impl OrderedMessageBuffer {
@@ -22,7 +22,7 @@ impl OrderedMessageBuffer {
     /// Writes a message to the buffer. messages are sort on insertion, so
     /// that later on multiple reads for incomplete sequences don't result in
     /// useless sort work.
-    pub fn write(&mut self, message: Message) {
+    pub fn write(&mut self, message: OrderedMessage) {
         self.messages.push(message);
         OrderedMessageBuffer::insertion_sort(&mut self.messages);
     }
@@ -39,7 +39,7 @@ impl OrderedMessageBuffer {
             return None;
         } else {
             let index = self.next_index.clone() + 1;
-            let contiguous_messages: Vec<Message> = self
+            let contiguous_messages: Vec<OrderedMessage> = self
                 .messages
                 .iter()
                 .filter(|message| message.index <= index)
@@ -90,16 +90,16 @@ mod test_chunking_and_reassembling {
         #[cfg(test)]
         mod when_full_ordered_sequence_exists {
             use super::*;
-            use crate::message::Message;
+
             #[test]
             fn read_returns_ordered_bytes_and_resets_buffer() {
                 let mut buffer = OrderedMessageBuffer::new();
 
-                let first_message = Message {
+                let first_message = OrderedMessage {
                     data: vec![1, 2, 3, 4],
                     index: 0,
                 };
-                let second_message = Message {
+                let second_message = OrderedMessage {
                     data: vec![5, 6, 7, 8],
                     index: 1,
                 };
@@ -119,11 +119,11 @@ mod test_chunking_and_reassembling {
             fn test_multiple_adds_stacks_up_bytes_in_the_buffer() {
                 let mut buffer = OrderedMessageBuffer::new();
 
-                let first_message = Message {
+                let first_message = OrderedMessage {
                     data: vec![1, 2, 3, 4],
                     index: 0,
                 };
-                let second_message = Message {
+                let second_message = OrderedMessage {
                     data: vec![5, 6, 7, 8],
                     index: 1,
                 };
@@ -139,11 +139,11 @@ mod test_chunking_and_reassembling {
             fn out_of_order_adds_results_in_ordered_byte_vector() {
                 let mut buffer = OrderedMessageBuffer::new();
 
-                let first_message = Message {
+                let first_message = OrderedMessage {
                     data: vec![1, 2, 3, 4],
                     index: 0,
                 };
-                let second_message = Message {
+                let second_message = OrderedMessage {
                     data: vec![5, 6, 7, 8],
                     index: 1,
                 };
@@ -157,23 +157,22 @@ mod test_chunking_and_reassembling {
         }
 
         mod when_there_are_gaps_in_the_sequence {
-
             use super::*;
+
             #[cfg(test)]
-            use crate::message::Message;
             fn setup() -> OrderedMessageBuffer {
                 let mut buffer = OrderedMessageBuffer::new();
 
-                let zero_message = Message {
+                let zero_message = OrderedMessage {
                     data: vec![0, 0, 0, 0],
                     index: 0,
                 };
-                let one_message = Message {
+                let one_message = OrderedMessage {
                     data: vec![1, 1, 1, 1],
                     index: 1,
                 };
 
-                let three_message = Message {
+                let three_message = OrderedMessage {
                     data: vec![3, 3, 3, 3],
                     index: 3,
                 };
@@ -193,7 +192,7 @@ mod test_chunking_and_reassembling {
                 assert_eq!(None, buffer.read());
 
                 // let's add another message, leaving a gap in place at index 2
-                let five_message = Message {
+                let five_message = OrderedMessage {
                     data: vec![5, 5, 5, 5],
                     index: 5,
                 };
@@ -206,7 +205,7 @@ mod test_chunking_and_reassembling {
                 let mut buffer = setup();
                 buffer.read(); // that burns the first two. We still have a gap before the 3s.
 
-                let two_message = Message {
+                let two_message = OrderedMessage {
                     data: vec![2, 2, 2, 2],
                     index: 2,
                 };
@@ -216,7 +215,7 @@ mod test_chunking_and_reassembling {
                 assert_eq!([2, 2, 2, 2, 3, 3, 3, 3].to_vec(), more_ordered_bytes);
 
                 // let's add another message
-                let five_message = Message {
+                let five_message = OrderedMessage {
                     data: vec![5, 5, 5, 5],
                     index: 5,
                 };
@@ -225,7 +224,7 @@ mod test_chunking_and_reassembling {
                 assert_eq!(None, buffer.read());
 
                 // let's fill in the gap of 4s now and read again
-                let four_message = Message {
+                let four_message = OrderedMessage {
                     data: vec![4, 4, 4, 4],
                     index: 4,
                 };

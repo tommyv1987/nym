@@ -3,5 +3,5 @@ mod message;
 mod sender;
 
 pub use buffer::OrderedMessageBuffer;
-pub use message::Message;
+pub use message::OrderedMessage;
 pub use sender::OrderedMessageSender;

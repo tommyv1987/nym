@@ -1,4 +1,4 @@
-use crate::message::Message;
+use crate::message::OrderedMessage;
 
 /// Assigns sequence numbers to outbound byte vectors. These messages can then
 /// be reassembled into an ordered sequence by the `OrderedMessageSender`.
@@ -11,8 +11,8 @@ impl OrderedMessageSender {
         OrderedMessageSender { next_index: 0 }
     }
 
-    pub fn packetize(&mut self, input: Vec<u8>) -> Message {
-        let message = Message {
+    pub fn packetize(&mut self, input: Vec<u8>) -> OrderedMessage {
+        let message = OrderedMessage {
             data: input.to_vec(),
             index: self.next_index,
         };
