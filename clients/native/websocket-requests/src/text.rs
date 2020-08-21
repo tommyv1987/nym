@@ -130,8 +130,8 @@ impl Into<String> for ServerResponseText {
 }
 
 impl From<ServerResponse> for ServerResponseText {
-    fn from(resp: ServerResponse) -> Self {
-        match resp {
+    fn from(response: ServerResponse) -> Self {
+        match response {
             ServerResponse::Received(reconstructed) => {
                 ServerResponseText::Received {
                     // TODO: ask DH what is more appropriate, lossy utf8 conversion or returning error and then
