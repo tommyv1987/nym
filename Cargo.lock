@@ -3032,18 +3032,11 @@ dependencies = [
  "log 0.4.8",
  "nymsphinx",
  "pretty_env_logger",
- "simple-socks5-requests",
+ "socks5-requests",
  "tokio 0.2.16",
  "tokio-tungstenite",
  "utils",
  "websocket-requests",
-]
-
-[[package]]
-name = "simple-socks5-requests"
-version = "0.1.0"
-dependencies = [
- "nymsphinx-addressing",
 ]
 
 [[package]]
@@ -3166,15 +3159,22 @@ dependencies = [
  "reqwest 0.9.24",
  "serde",
  "serde_json",
- "simple-socks5-requests",
  "sled 0.33.0",
  "snafu",
+ "socks5-requests",
  "tempfile",
  "tokio 0.2.16",
  "tokio-tungstenite",
  "topology",
  "url 2.1.1",
  "utils",
+]
+
+[[package]]
+name = "socks5-requests"
+version = "0.1.0"
+dependencies = [
+ "nymsphinx-addressing",
 ]
 
 [[package]]
