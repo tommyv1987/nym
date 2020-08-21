@@ -3,7 +3,7 @@ use futures::channel::mpsc;
 use futures::SinkExt;
 use futures_util::StreamExt;
 use nymsphinx::addressing::clients::Recipient;
-use simple_socks5_requests::{Request, Response};
+use socks5_requests::{Request, Response};
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::protocol::Message;
 use tokio_tungstenite::WebSocketStream;

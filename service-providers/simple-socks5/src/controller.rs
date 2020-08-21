@@ -1,7 +1,7 @@
 use crate::connection::Connection;
 use futures::lock::Mutex;
 use nymsphinx::addressing::clients::Recipient;
-use simple_socks5_requests::{ConnectionId, RemoteAddress, Request, Response};
+use socks5_requests::{ConnectionId, RemoteAddress, Request, Response};
 use std::collections::HashMap;
 use std::io;
 use std::sync::Arc;

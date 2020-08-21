@@ -1,5 +1,5 @@
 use nymsphinx::addressing::clients::Recipient;
-use simple_socks5_requests::{ConnectionId, RemoteAddress};
+use socks5_requests::{ConnectionId, RemoteAddress};
 use tokio::net::TcpStream;
 use tokio::prelude::*;
 use utils::read_delay_loop::try_read_data;
