@@ -15,30 +15,21 @@ impl Ord for Message {
 /// Assigns sequence numbers to outbound byte vectors. These messages can then
 /// be reassembled into an ordered sequence by the `OrderedMessageSender`.
 pub struct OrderedMessageSender {
-    message_max_size: usize,
     next_index: usize,
 }
 
 impl OrderedMessageSender {
-    pub fn new(message_max_size: usize) -> OrderedMessageSender {
-        OrderedMessageSender {
-            message_max_size,
-            next_index: 0,
-        }
+    pub fn new() -> OrderedMessageSender {
+        OrderedMessageSender { next_index: 0 }
     }
 
-    pub fn packetize(&mut self, input: Vec<u8>) -> Vec<Message> {
-        input
-            .chunks(self.message_max_size)
-            .map(|message| {
-                let f = Message {
-                    data: message.to_vec(),
-                    index: self.next_index,
-                };
-                self.next_index = self.next_index + 1;
-                f
-            })
-            .collect()
+    pub fn packetize(&mut self, input: Vec<u8>) -> Message {
+        let message = Message {
+            data: input.to_vec(),
+            index: self.next_index,
+        };
+        self.next_index = self.next_index + 1;
+        message
     }
 }
 
@@ -133,72 +124,16 @@ mod test_chunking_and_reassembling {
 
         #[test]
         fn increase_as_messages_are_sent() {
-            let mut packetizer = OrderedMessageSender::new(4);
+            let mut sender = OrderedMessageSender::new();
             let first_bytes = vec![1, 2, 3, 4];
             let second_bytes = vec![5, 6, 7, 8];
 
-            let first_messages = packetizer.packetize(first_bytes);
-            assert_eq!(1, first_messages.len());
-            let first_indexes: Vec<usize> =
-                first_messages.iter().map(|message| message.index).collect();
-            assert_eq!(first_indexes, vec![0]);
+            let first_message = sender.packetize(first_bytes);
 
-            let second_messages = packetizer.packetize(second_bytes);
-            assert_eq!(1, second_messages.len());
-            let second_indexes: Vec<usize> = second_messages
-                .iter()
-                .map(|message| message.index)
-                .collect();
-            assert_eq!(second_indexes, vec![1]);
-        }
-    }
+            assert_eq!(first_message.index, 0);
 
-    #[cfg(test)]
-    mod sending_ordered_messages_for_received_bytes {
-        use super::*;
-
-        #[cfg(test)]
-        mod when_max_message_size_equals_bytes_supplied {
-            use super::*;
-
-            #[test]
-            fn produces_a_vec_with_a_single_message() {
-                let mut packetizer = OrderedMessageSender::new(4);
-                let bytes: Vec<u8> = vec![1, 2, 3, 4];
-                let output = packetizer.packetize(bytes);
-                assert_eq!(1, output.len());
-                assert_eq!(0, output.first().unwrap().index);
-            }
-        }
-
-        #[cfg(test)]
-        mod when_max_size_is_greater_than_bytes_supplied {
-            use super::*;
-
-            #[test]
-            fn produces_a_vec_with_a_single_message() {
-                let mut packetizer = OrderedMessageSender::new(5);
-                let bytes: Vec<u8> = vec![1, 2, 3, 4];
-                let output = packetizer.packetize(bytes);
-                assert_eq!(1, output.len());
-                assert_eq!(0, output.first().unwrap().index);
-            }
-        }
-
-        #[cfg(test)]
-        mod when_max_size_is_less_than_bytes_supplied {
-            use super::*;
-
-            #[test]
-            fn produces_a_vec_with_modulo_messages() {
-                let mut packetizer = OrderedMessageSender::new(3);
-                let bytes: Vec<u8> = vec![1, 2, 3, 4];
-                let output = packetizer.packetize(bytes);
-                assert_eq!(2, output.len());
-                // check that indexes increase properly
-                assert_eq!(0, output[0].index);
-                assert_eq!(1, output[1].index);
-            }
+            let second_message = sender.packetize(second_bytes);
+            assert_eq!(second_message.index, 1);
         }
     }
 
