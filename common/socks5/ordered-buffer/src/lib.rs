@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
-#[derive(Clone, Debug)]
 pub struct Fragment {
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd)]
     data: Vec<u8>,
     index: usize,
 }
@@ -12,19 +12,6 @@ impl Ord for Fragment {
     }
 }
 
-impl PartialOrd for Fragment {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl PartialEq for Fragment {
-    fn eq(&self, other: &Self) -> bool {
-        (self.index, &self.data) == (other.index, &other.data)
-    }
-}
-
-impl Eq for Fragment {}
 
 pub struct OrderedFragmentSender {
     fragment_max_size: usize,
