@@ -30,9 +30,9 @@ impl OrderedMessageSender {
     pub fn packetize(&mut self, input: Vec<u8>) -> Vec<Message> {
         input
             .chunks(self.fragment_max_size)
-            .map(|frag| {
+            .map(|message| {
                 let f = Message {
-                    data: frag.to_vec(),
+                    data: message.to_vec(),
                     index: self.next_index,
                 };
                 self.next_index = self.next_index + 1;
@@ -61,11 +61,11 @@ impl OrderedMessageBuffer {
         }
     }
 
-    /// Writes a fragment to the buffer. Fragments are sort on insertion, so
+    /// Writes a message to the buffer. Fragments are sort on insertion, so
     /// that later on multiple reads for incomplete sequences don't result in
     /// useless sort work.
-    pub fn write(&mut self, fragment: Message) {
-        self.fragments.push(fragment);
+    pub fn write(&mut self, message: Message) {
+        self.fragments.push(message);
         OrderedMessageBuffer::insertion_sort(&mut self.fragments);
     }
 
@@ -73,7 +73,7 @@ impl OrderedMessageBuffer {
     /// ordered data in the buffer, and `None` if the buffer is empty or has
     /// gaps in the contained data. E.g. if the buffer contains message
     /// fragments 0, 1, 2, and 4, then a read will return the bytes of fragments
-    /// 0, 1, 2. Subsequent reads will return `None` until fragment 3 comes in,
+    /// 0, 1, 2. Subsequent reads will return `None` until message 3 comes in,
     /// at which point 3, 4, and any further contiguous fragments which have arrived
     /// will be returned.
     pub fn read(&mut self) -> Option<Vec<u8>> {
@@ -84,12 +84,12 @@ impl OrderedMessageBuffer {
             let contiguous_fragments: Vec<Message> = self
                 .fragments
                 .iter()
-                .filter(|frag| frag.index <= index)
+                .filter(|message| message.index <= index)
                 .cloned()
                 .collect();
 
             // get rid of all fragments we're about to send out of the buffer
-            self.fragments.retain(|frag| frag.index > index);
+            self.fragments.retain(|message| message.index > index);
 
             // advance the index because we've read stuff up to a new high water mark
             let high_water = index + contiguous_fragments.len() - 1;
@@ -98,7 +98,7 @@ impl OrderedMessageBuffer {
             // dig out the bytes from inside the struct
             let data = contiguous_fragments
                 .iter()
-                .flat_map(|frag| frag.data.clone())
+                .flat_map(|message| message.data.clone())
                 .collect();
 
             Some(data)
@@ -132,20 +132,25 @@ mod test_chunking_and_reassembling {
         use super::*;
 
         #[test]
-        fn increase_as_fragments_are_sent() {
+        fn increase_as_messages_are_sent() {
             let mut packetizer = OrderedMessageSender::new(4);
             let first_bytes = vec![1, 2, 3, 4];
             let second_bytes = vec![5, 6, 7, 8];
 
             let first_fragments = packetizer.packetize(first_bytes);
             assert_eq!(1, first_fragments.len());
-            let first_indexes: Vec<usize> = first_fragments.iter().map(|frag| frag.index).collect();
+            let first_indexes: Vec<usize> = first_fragments
+                .iter()
+                .map(|message| message.index)
+                .collect();
             assert_eq!(first_indexes, vec![0]);
 
             let second_fragments = packetizer.packetize(second_bytes);
             assert_eq!(1, second_fragments.len());
-            let second_indexes: Vec<usize> =
-                second_fragments.iter().map(|frag| frag.index).collect();
+            let second_indexes: Vec<usize> = second_fragments
+                .iter()
+                .map(|message| message.index)
+                .collect();
             assert_eq!(second_indexes, vec![1]);
         }
     }
@@ -306,12 +311,12 @@ mod test_chunking_and_reassembling {
                 // we shouldn't get any more from a second attempt if nothing is added
                 assert_eq!(None, buffer.read());
 
-                // let's add another fragment, leaving a gap in place at index 2
-                let five_frag = Message {
+                // let's add another message, leaving a gap in place at index 2
+                let five_message = Message {
                     data: vec![5, 5, 5, 5],
                     index: 5,
                 };
-                buffer.write(five_frag);
+                buffer.write(five_message);
                 assert_eq!(None, buffer.read());
             }
 
@@ -329,7 +334,7 @@ mod test_chunking_and_reassembling {
                 let more_ordered_bytes = buffer.read().unwrap();
                 assert_eq!([2, 2, 2, 2, 3, 3, 3, 3].to_vec(), more_ordered_bytes);
 
-                // let's add another fragment
+                // let's add another message
                 let five_frag = Message {
                     data: vec![5, 5, 5, 5],
                     index: 5,
