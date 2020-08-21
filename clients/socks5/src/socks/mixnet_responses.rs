@@ -57,7 +57,7 @@ impl MixnetResponseListener {
         // `remove` gives back the entry (assuming it exists). There's no reason
         // for it to persist after we send data back
         if let Some(stream_receiver) = active_streams_guard.remove(&response.connection_id) {
-            stream_receiver.send(response.data).unwrap()
+            stream_receiver.send(response.message).unwrap()
         } else {
             warn!(
                 "no connection_id exists with id: {:?}",

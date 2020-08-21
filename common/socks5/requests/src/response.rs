@@ -16,10 +16,10 @@ pub struct Response {
 
 impl Response {
     /// Constructor for responses
-    pub fn new(connection_id: ConnectionId, data: Vec<u8>) -> Self {
+    pub fn new(connection_id: ConnectionId, message: Vec<u8>) -> Self {
         Response {
             connection_id,
-            data,
+            message,
         }
     }
 
@@ -57,7 +57,7 @@ impl Response {
             .to_be_bytes()
             .iter()
             .cloned()
-            .chain(self.data.into_iter())
+            .chain(self.message.into_iter())
             .collect()
     }
 }
@@ -91,7 +91,7 @@ mod constructing_socks5_responses_from_bytes {
         let expected = Response::new(u64::from_be_bytes([0, 1, 2, 3, 4, 5, 6, 7]), Vec::new());
         let actual = Response::try_from_bytes(&response_bytes).unwrap();
         assert_eq!(expected.connection_id, actual.connection_id);
-        assert_eq!(expected.data, actual.data);
+        assert_eq!(expected.message, actual.message);
     }
 
     #[test]
@@ -103,6 +103,6 @@ mod constructing_socks5_responses_from_bytes {
         );
         let actual = Response::try_from_bytes(&response_bytes).unwrap();
         assert_eq!(expected.connection_id, actual.connection_id);
-        assert_eq!(expected.data, actual.data);
+        assert_eq!(expected.message, actual.message);
     }
 }
