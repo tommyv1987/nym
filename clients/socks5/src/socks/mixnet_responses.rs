@@ -5,7 +5,7 @@ use futures::channel::mpsc;
 use futures::StreamExt;
 use log::*;
 use nymsphinx::receiver::ReconstructedMessage;
-use simple_socks5_requests::Response;
+use socks5_requests::Response;
 
 pub(crate) struct MixnetResponseListener {
     buffer_requester: ReceivedBufferRequestSender,

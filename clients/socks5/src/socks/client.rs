@@ -17,7 +17,7 @@ use super::authentication::{AuthenticationMethods, Authenticator, User};
 use super::request::{SocksCommand, SocksRequest};
 use super::types::{ResponseCode, SocksProxyError};
 use super::{RESERVED, SOCKS_VERSION};
-use simple_socks5_requests::{ConnectionId, Request};
+use socks5_requests::{ConnectionId, Request};
 
 /// A client connecting to the Socks proxy server, because
 /// it wants to make a Nym-protected outbound request. Typically, this is
