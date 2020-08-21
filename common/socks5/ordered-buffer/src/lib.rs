@@ -15,21 +15,21 @@ impl Ord for Message {
 /// Assigns sequence numbers to outbound byte vectors. These messages can then
 /// be reassembled into an ordered sequence by the `OrderedMessageSender`.
 pub struct OrderedMessageSender {
-    fragment_max_size: usize,
+    message_max_size: usize,
     next_index: usize,
 }
 
 impl OrderedMessageSender {
-    pub fn new(fragment_max_size: usize) -> OrderedMessageSender {
+    pub fn new(message_max_size: usize) -> OrderedMessageSender {
         OrderedMessageSender {
-            fragment_max_size,
+            message_max_size,
             next_index: 0,
         }
     }
 
     pub fn packetize(&mut self, input: Vec<u8>) -> Vec<Message> {
         input
-            .chunks(self.fragment_max_size)
+            .chunks(self.message_max_size)
             .map(|message| {
                 let f = Message {
                     data: message.to_vec(),
@@ -45,58 +45,58 @@ impl OrderedMessageSender {
 #[derive(Debug)]
 /// Stores messages and emits them in order.
 ///
-/// Only contiguous fragments with an index less than or equal to `next_index`
+/// Only contiguous messages with an index less than or equal to `next_index`
 /// will be returned - this avoids returning gaps while we wait for the buffer
 /// to fill up with the full sequence.
 pub struct OrderedMessageBuffer {
     next_index: usize,
-    fragments: Vec<Message>,
+    messages: Vec<Message>,
 }
 
 impl OrderedMessageBuffer {
     pub fn new() -> OrderedMessageBuffer {
         OrderedMessageBuffer {
             next_index: 0,
-            fragments: Vec::new(),
+            messages: Vec::new(),
         }
     }
 
-    /// Writes a message to the buffer. Fragments are sort on insertion, so
+    /// Writes a message to the buffer. messages are sort on insertion, so
     /// that later on multiple reads for incomplete sequences don't result in
     /// useless sort work.
     pub fn write(&mut self, message: Message) {
-        self.fragments.push(message);
-        OrderedMessageBuffer::insertion_sort(&mut self.fragments);
+        self.messages.push(message);
+        OrderedMessageBuffer::insertion_sort(&mut self.messages);
     }
 
     /// Returns `Option<Vec<u8>>` where it's `Some(bytes)` if there is gapless
     /// ordered data in the buffer, and `None` if the buffer is empty or has
     /// gaps in the contained data. E.g. if the buffer contains message
-    /// fragments 0, 1, 2, and 4, then a read will return the bytes of fragments
+    /// messages 0, 1, 2, and 4, then a read will return the bytes of messages
     /// 0, 1, 2. Subsequent reads will return `None` until message 3 comes in,
-    /// at which point 3, 4, and any further contiguous fragments which have arrived
+    /// at which point 3, 4, and any further contiguous messages which have arrived
     /// will be returned.
     pub fn read(&mut self) -> Option<Vec<u8>> {
-        if self.fragments.is_empty() || self.fragments.first().unwrap().index > self.next_index {
+        if self.messages.is_empty() || self.messages.first().unwrap().index > self.next_index {
             return None;
         } else {
             let index = self.next_index.clone() + 1;
-            let contiguous_fragments: Vec<Message> = self
-                .fragments
+            let contiguous_messages: Vec<Message> = self
+                .messages
                 .iter()
                 .filter(|message| message.index <= index)
                 .cloned()
                 .collect();
 
-            // get rid of all fragments we're about to send out of the buffer
-            self.fragments.retain(|message| message.index > index);
+            // get rid of all messages we're about to send out of the buffer
+            self.messages.retain(|message| message.index > index);
 
             // advance the index because we've read stuff up to a new high water mark
-            let high_water = index + contiguous_fragments.len() - 1;
+            let high_water = index + contiguous_messages.len() - 1;
             self.next_index = high_water;
 
             // dig out the bytes from inside the struct
-            let data = contiguous_fragments
+            let data = contiguous_messages
                 .iter()
                 .flat_map(|message| message.data.clone())
                 .collect();
@@ -137,17 +137,15 @@ mod test_chunking_and_reassembling {
             let first_bytes = vec![1, 2, 3, 4];
             let second_bytes = vec![5, 6, 7, 8];
 
-            let first_fragments = packetizer.packetize(first_bytes);
-            assert_eq!(1, first_fragments.len());
-            let first_indexes: Vec<usize> = first_fragments
-                .iter()
-                .map(|message| message.index)
-                .collect();
+            let first_messages = packetizer.packetize(first_bytes);
+            assert_eq!(1, first_messages.len());
+            let first_indexes: Vec<usize> =
+                first_messages.iter().map(|message| message.index).collect();
             assert_eq!(first_indexes, vec![0]);
 
-            let second_fragments = packetizer.packetize(second_bytes);
-            assert_eq!(1, second_fragments.len());
-            let second_indexes: Vec<usize> = second_fragments
+            let second_messages = packetizer.packetize(second_bytes);
+            assert_eq!(1, second_messages.len());
+            let second_indexes: Vec<usize> = second_messages
                 .iter()
                 .map(|message| message.index)
                 .collect();
@@ -156,15 +154,15 @@ mod test_chunking_and_reassembling {
     }
 
     #[cfg(test)]
-    mod sending_ordered_fragments_for_received_bytes {
+    mod sending_ordered_messages_for_received_bytes {
         use super::*;
 
         #[cfg(test)]
-        mod when_max_fragment_size_equals_bytes_supplied {
+        mod when_max_message_size_equals_bytes_supplied {
             use super::*;
 
             #[test]
-            fn produces_a_vec_with_a_single_fragment() {
+            fn produces_a_vec_with_a_single_message() {
                 let mut packetizer = OrderedMessageSender::new(4);
                 let bytes: Vec<u8> = vec![1, 2, 3, 4];
                 let output = packetizer.packetize(bytes);
@@ -178,7 +176,7 @@ mod test_chunking_and_reassembling {
             use super::*;
 
             #[test]
-            fn produces_a_vec_with_a_single_fragment() {
+            fn produces_a_vec_with_a_single_message() {
                 let mut packetizer = OrderedMessageSender::new(5);
                 let bytes: Vec<u8> = vec![1, 2, 3, 4];
                 let output = packetizer.packetize(bytes);
@@ -192,7 +190,7 @@ mod test_chunking_and_reassembling {
             use super::*;
 
             #[test]
-            fn produces_a_vec_with_modulo_fragments() {
+            fn produces_a_vec_with_modulo_messages() {
                 let mut packetizer = OrderedMessageSender::new(3);
                 let bytes: Vec<u8> = vec![1, 2, 3, 4];
                 let output = packetizer.packetize(bytes);
@@ -215,20 +213,20 @@ mod test_chunking_and_reassembling {
             fn read_returns_ordered_bytes_and_resets_buffer() {
                 let mut buffer = OrderedMessageBuffer::new();
 
-                let first_frag = Message {
+                let first_message = Message {
                     data: vec![1, 2, 3, 4],
                     index: 0,
                 };
-                let second_frag = Message {
+                let second_message = Message {
                     data: vec![5, 6, 7, 8],
                     index: 1,
                 };
 
-                buffer.write(first_frag);
+                buffer.write(first_message);
                 let first_read = buffer.read().unwrap();
                 assert_eq!(vec![1, 2, 3, 4], first_read);
 
-                buffer.write(second_frag);
+                buffer.write(second_message);
                 let second_read = buffer.read().unwrap();
                 assert_eq!(vec![5, 6, 7, 8], second_read);
 
@@ -239,17 +237,17 @@ mod test_chunking_and_reassembling {
             fn test_multiple_adds_stacks_up_bytes_in_the_buffer() {
                 let mut buffer = OrderedMessageBuffer::new();
 
-                let first_frag = Message {
+                let first_message = Message {
                     data: vec![1, 2, 3, 4],
                     index: 0,
                 };
-                let second_frag = Message {
+                let second_message = Message {
                     data: vec![5, 6, 7, 8],
                     index: 1,
                 };
 
-                buffer.write(first_frag);
-                buffer.write(second_frag);
+                buffer.write(first_message);
+                buffer.write(second_message);
                 let second_read = buffer.read();
                 assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8], second_read.unwrap());
                 assert_eq!(None, buffer.read()); // second read on fully ordered result set is empty
@@ -259,17 +257,17 @@ mod test_chunking_and_reassembling {
             fn out_of_order_adds_results_in_ordered_byte_vector() {
                 let mut buffer = OrderedMessageBuffer::new();
 
-                let first_frag = Message {
+                let first_message = Message {
                     data: vec![1, 2, 3, 4],
                     index: 0,
                 };
-                let second_frag = Message {
+                let second_message = Message {
                     data: vec![5, 6, 7, 8],
                     index: 1,
                 };
 
-                buffer.write(second_frag);
-                buffer.write(first_frag);
+                buffer.write(second_message);
+                buffer.write(first_message);
                 let read = buffer.read();
                 assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8], read.unwrap());
                 assert_eq!(None, buffer.read()); // second read on fully ordered result set is empty
@@ -283,23 +281,23 @@ mod test_chunking_and_reassembling {
             fn setup() -> OrderedMessageBuffer {
                 let mut buffer = OrderedMessageBuffer::new();
 
-                let zero_frag = Message {
+                let zero_message = Message {
                     data: vec![0, 0, 0, 0],
                     index: 0,
                 };
-                let one_frag = Message {
+                let one_message = Message {
                     data: vec![1, 1, 1, 1],
                     index: 1,
                 };
 
-                let three_frag = Message {
+                let three_message = Message {
                     data: vec![3, 3, 3, 3],
                     index: 3,
                 };
 
-                buffer.write(zero_frag);
-                buffer.write(one_frag);
-                buffer.write(three_frag);
+                buffer.write(zero_message);
+                buffer.write(one_message);
+                buffer.write(three_message);
                 buffer
             }
             #[test]
@@ -325,30 +323,30 @@ mod test_chunking_and_reassembling {
                 let mut buffer = setup();
                 buffer.read(); // that burns the first two. We still have a gap before the 3s.
 
-                let two_frag = Message {
+                let two_message = Message {
                     data: vec![2, 2, 2, 2],
                     index: 2,
                 };
-                buffer.write(two_frag);
+                buffer.write(two_message);
 
                 let more_ordered_bytes = buffer.read().unwrap();
                 assert_eq!([2, 2, 2, 2, 3, 3, 3, 3].to_vec(), more_ordered_bytes);
 
                 // let's add another message
-                let five_frag = Message {
+                let five_message = Message {
                     data: vec![5, 5, 5, 5],
                     index: 5,
                 };
-                buffer.write(five_frag);
+                buffer.write(five_message);
 
                 assert_eq!(None, buffer.read());
 
                 // let's fill in the gap of 4s now and read again
-                let four_frag = Message {
+                let four_message = Message {
                     data: vec![4, 4, 4, 4],
                     index: 4,
                 };
-                buffer.write(four_frag);
+                buffer.write(four_message);
 
                 assert_eq!([4, 4, 4, 4, 5, 5, 5, 5].to_vec(), buffer.read().unwrap());
 
