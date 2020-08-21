@@ -5,7 +5,8 @@ use tokio::prelude::*;
 use utils::read_delay_loop::try_read_data;
 
 /// A TCP connection between the Socks5 service provider, which makes
-/// outbound requests on behalf of users and returns the responses through
+/// outbound requests on behalf of users, and a remote system. Makes the request,
+/// reads any response, and returns the response data to the requesting user through
 /// the mixnet.
 #[derive(Debug)]
 pub(crate) struct Connection {
