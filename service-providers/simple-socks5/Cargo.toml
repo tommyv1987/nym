@@ -17,6 +17,6 @@ tokio = { version = "0.2", features = ["full"] }
 tokio-tungstenite = "0.11.0"
 
 nymsphinx = { path = "../../common/nymsphinx" }
-simple-socks5-requests = { path = "../../common/socks5/simple-socks5-requests" }
+simple-socks5-requests = { path = "../../common/socks5/requests" }
 utils = { path = "../../common/utils" }
 websocket-requests = { path = "../../clients/native/websocket-requests" }
