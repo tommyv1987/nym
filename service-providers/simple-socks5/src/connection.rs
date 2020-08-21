@@ -56,10 +56,3 @@ impl Connection {
         try_read_data(timeout_duration, &mut self.conn, &self.address).await
     }
 }
-
-// TODO: perhaps a smart implementation of this could alleviate some issues associated with `try_read_response_data` ?
-// impl AsyncRead for Connection {
-//     fn poll_read(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &mut [u8]) -> Poll<io::Result<usize>> {
-//         unimplemented!()
-//     }
-// }
