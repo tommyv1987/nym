@@ -55,7 +55,7 @@ pub enum Request {
     Connect {
         conn_id: ConnectionId,
         remote_addr: RemoteAddress,
-        data: Vec<u8>,
+        data: Vec<u8>, // change to ordered message
         return_address: Recipient,
     },
 

@@ -1,4 +1,5 @@
 use crate::ConnectionId;
+use ordered_buffer::OrderedMessage;
 
 #[derive(Debug, PartialEq)]
 pub enum ResponseError {
@@ -10,13 +11,13 @@ pub enum ResponseError {
 /// application.
 #[derive(Debug)]
 pub struct Response {
-    pub data: Vec<u8>,
+    pub message: OrderedMessage, // change to ordered message
     pub connection_id: ConnectionId,
 }
 
 impl Response {
     /// Constructor for responses
-    pub fn new(connection_id: ConnectionId, message: Vec<u8>) -> Self {
+    pub fn new(connection_id: ConnectionId, message: OrderedMessage) -> Self {
         Response {
             connection_id,
             message,
@@ -33,7 +34,7 @@ impl Response {
         }
 
         let mut connection_id_bytes = b.to_vec();
-        let data = connection_id_bytes.split_off(8);
+        let index_bytes = connection_id_bytes.split_off(8);
 
         let connection_id = u64::from_be_bytes([
             connection_id_bytes[0],
@@ -46,19 +47,42 @@ impl Response {
             connection_id_bytes[7],
         ]);
 
-        let response = Response::new(connection_id, data);
+        let data = index_bytes.to_vec().split_off(8);
+        let message = OrderedMessage::from_be_bytes(data);
+        let response = Response::new(connection_id, message);
         Ok(response)
     }
 
     /// Serializes the response into bytes so that it can be sent back through
-    /// the mixnet to the requesting application.
+    /// the mixnet to the requesting application. The format is
+    /// | 8 connection_id_bytes | 8 message index bytes | data |
     pub fn into_bytes(self) -> Vec<u8> {
         self.connection_id
             .to_be_bytes()
             .iter()
             .cloned()
-            .chain(self.message.into_iter())
+            .chain(self.message.into_bytes())
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod serializing_socks5_responses_into_bytes {
+    use super::*;
+
+    #[test]
+    fn works() {
+        let message = OrderedMessage {
+            data: vec![222],
+            index: 1,
+        };
+        let response = Response::new(111, message);
+        let bytes = response.into_bytes();
+
+        assert_eq!(
+            vec![0, 0, 0, 0, 0, 0, 0, 111, 0, 0, 0, 0, 0, 0, 0, 1, 222],
+            bytes
+        );
     }
 }
 
@@ -87,8 +111,14 @@ mod constructing_socks5_responses_from_bytes {
 
     #[test]
     fn works_when_there_is_no_data() {
-        let response_bytes = vec![0, 1, 2, 3, 4, 5, 6, 7];
-        let expected = Response::new(u64::from_be_bytes([0, 1, 2, 3, 4, 5, 6, 7]), Vec::new());
+        let message = OrderedMessage {
+            data: Vec::new(),
+            index: 1,
+        };
+        let mut message_bytes = message.clone().into_bytes();
+        let mut response_bytes: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7];
+        response_bytes.append(&mut message_bytes);
+        let expected = Response::new(u64::from_be_bytes([0, 1, 2, 3, 4, 5, 6, 7]), message);
         let actual = Response::try_from_bytes(&response_bytes).unwrap();
         assert_eq!(expected.connection_id, actual.connection_id);
         assert_eq!(expected.message, actual.message);
@@ -96,10 +126,15 @@ mod constructing_socks5_responses_from_bytes {
 
     #[test]
     fn works_when_there_is_data() {
-        let response_bytes = vec![0, 1, 2, 3, 4, 5, 6, 7, 255, 255, 255];
+        let response_bytes = vec![
+            0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 1, 255, 255, 255,
+        ];
         let expected = Response::new(
             u64::from_be_bytes([0, 1, 2, 3, 4, 5, 6, 7]),
-            vec![255, 255, 255],
+            OrderedMessage {
+                index: 1,
+                data: vec![255, 255, 255],
+            },
         );
         let actual = Response::try_from_bytes(&response_bytes).unwrap();
         assert_eq!(expected.connection_id, actual.connection_id);

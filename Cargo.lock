@@ -3031,6 +3031,7 @@ dependencies = [
  "futures-util",
  "log 0.4.8",
  "nymsphinx",
+ "ordered-buffer",
  "pretty_env_logger",
  "socks5-requests",
  "tokio 0.2.16",
@@ -3152,6 +3153,7 @@ dependencies = [
  "gateway-requests",
  "log 0.4.8",
  "nymsphinx",
+ "ordered-buffer",
  "pem",
  "pemstore",
  "pretty_env_logger",
@@ -3175,6 +3177,7 @@ name = "socks5-requests"
 version = "0.1.0"
 dependencies = [
  "nymsphinx-addressing",
+ "ordered-buffer",
 ]
 
 [[package]]

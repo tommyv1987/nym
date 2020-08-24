@@ -5,12 +5,14 @@ use futures::channel::mpsc;
 use futures::StreamExt;
 use log::*;
 use nymsphinx::receiver::ReconstructedMessage;
+use ordered_buffer::{OrderedMessage, OrderedMessageBuffer};
 use socks5_requests::Response;
 
 pub(crate) struct MixnetResponseListener {
     buffer_requester: ReceivedBufferRequestSender,
     mix_response_receiver: ReconstructedMessagesReceiver,
     active_streams: ActiveStreams,
+    response_buffer: OrderedMessageBuffer,
 }
 
 impl Drop for MixnetResponseListener {
@@ -31,15 +33,19 @@ impl MixnetResponseListener {
             .unbounded_send(ReceivedBufferMessage::ReceiverAnnounce(mix_response_sender))
             .unwrap();
 
+        let response_buffer = OrderedMessageBuffer::new();
         MixnetResponseListener {
             active_streams,
             buffer_requester,
             mix_response_receiver,
+            response_buffer,
         }
     }
 
-    async fn on_message(&self, reconstructed_message: ReconstructedMessage) {
+    async fn on_message(&mut self, reconstructed_message: ReconstructedMessage) {
         let raw_message = reconstructed_message.message;
+        let ordered_message = OrderedMessage::from_be_bytes(raw_message);
+        self.response_buffer.write(ordered_message);
         if reconstructed_message.reply_SURB.is_some() {
             println!("this message had a surb - we didn't do anything with it");
         }
@@ -57,7 +63,9 @@ impl MixnetResponseListener {
         // `remove` gives back the entry (assuming it exists). There's no reason
         // for it to persist after we send data back
         if let Some(stream_receiver) = active_streams_guard.remove(&response.connection_id) {
-            stream_receiver.send(response.message).unwrap()
+            if let Some(msg) = self.response_buffer.read() {
+                stream_receiver.send(msg).unwrap() // TODO use message!
+            }
         } else {
             warn!(
                 "no connection_id exists with id: {:?}",

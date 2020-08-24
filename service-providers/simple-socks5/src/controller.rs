@@ -1,6 +1,7 @@
 use crate::connection::Connection;
 use futures::lock::Mutex;
 use nymsphinx::addressing::clients::Recipient;
+use ordered_buffer::OrderedMessageSender;
 use socks5_requests::{ConnectionId, RemoteAddress, Request, Response};
 use std::collections::HashMap;
 use std::io;
@@ -74,8 +75,15 @@ impl Controller {
         return_address: Recipient,
     ) -> Result<Response, ConnectionError> {
         println!("Connecting {} to remote {}", conn_id, remote_addr);
-        let mut connection =
-            Connection::new(conn_id, remote_addr, &init_data, return_address).await?;
+        let response_sender = OrderedMessageSender::new();
+        let mut connection = Connection::new(
+            conn_id,
+            remote_addr,
+            &init_data,
+            response_sender,
+            return_address,
+        )
+        .await?;
         let response_data = connection.try_read_response_data().await?;
         self.insert_connection(conn_id, connection).await;
         Ok(Response::new(conn_id, response_data))

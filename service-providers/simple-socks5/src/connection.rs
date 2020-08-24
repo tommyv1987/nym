@@ -1,4 +1,5 @@
 use nymsphinx::addressing::clients::Recipient;
+use ordered_buffer::{OrderedMessage, OrderedMessageSender};
 use socks5_requests::{ConnectionId, RemoteAddress};
 use tokio::net::TcpStream;
 use tokio::prelude::*;
@@ -14,6 +15,7 @@ pub(crate) struct Connection {
     address: RemoteAddress,
     conn: TcpStream,
     return_address: Recipient,
+    response_sender: OrderedMessageSender,
 }
 
 impl Connection {
@@ -21,7 +23,9 @@ impl Connection {
         id: ConnectionId,
         address: RemoteAddress,
         initial_data: &[u8],
+        response_sender: OrderedMessageSender,
         return_address: Recipient,
+        // request_buffer: OrderedMessageBuffer,
     ) -> io::Result<Self> {
         let conn = match TcpStream::connect(&address).await {
             Ok(conn) => conn,
@@ -34,8 +38,10 @@ impl Connection {
             id,
             address,
             conn,
+            response_sender,
             return_address,
         };
+        // get initial data, if there is any, from the request_buffer
         connection.send_data(&initial_data).await?;
         Ok(connection)
     }
@@ -45,14 +51,18 @@ impl Connection {
     }
 
     pub(crate) async fn send_data(&mut self, data: &[u8]) -> io::Result<()> {
+        // get data, if there is any, from the request_buffer
         println!("Sending {} bytes to {}", data.len(), self.address);
         self.conn.write_all(&data).await
     }
 
     /// Read response data by looping, waiting for anything we get back from the
     /// remote server. Returns once it times out or the connection closes.
-    pub(crate) async fn try_read_response_data(&mut self) -> io::Result<Vec<u8>> {
+    pub(crate) async fn try_read_response_data(&mut self) -> io::Result<OrderedMessage> {
         let timeout_duration = std::time::Duration::from_millis(500);
-        try_read_data(timeout_duration, &mut self.conn, &self.address).await
+        let data = try_read_data(timeout_duration, &mut self.conn, &self.address).await?;
+        // take the returned bytes (if there are any) and run them through this
+        // connection's response_sender. Then return the ordered messages.
+        Ok(self.response_sender.to_message(data))
     }
 }

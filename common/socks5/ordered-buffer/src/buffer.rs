@@ -29,11 +29,12 @@ impl OrderedMessageBuffer {
 
     /// Returns `Option<Vec<u8>>` where it's `Some(bytes)` if there is gapless
     /// ordered data in the buffer, and `None` if the buffer is empty or has
-    /// gaps in the contained data. E.g. if the buffer contains message
-    /// messages 0, 1, 2, and 4, then a read will return the bytes of messages
-    /// 0, 1, 2. Subsequent reads will return `None` until message 3 comes in,
-    /// at which point 3, 4, and any further contiguous messages which have arrived
-    /// will be returned.
+    /// gaps in the contained data.
+    ///
+    /// E.g. if the buffer contains messages with indexes 0, 1, 2, and 4, then
+    /// a read will return the bytes of messages 0, 1, 2. Subsequent reads will
+    /// return `None` until message 3 comes in, at which point 3, 4, and any
+    /// further contiguous messages which have arrived will be returned.
     pub fn read(&mut self) -> Option<Vec<u8>> {
         if self.messages.is_empty() || self.messages.first().unwrap().index > self.next_index {
             return None;
