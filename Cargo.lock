@@ -3025,6 +3025,7 @@ dependencies = [
 name = "simple-socks5"
 version = "0.1.0"
 dependencies = [
+ "available-reader",
  "bs58",
  "clap",
  "futures 0.3.4",
@@ -3036,7 +3037,6 @@ dependencies = [
  "socks5-requests",
  "tokio 0.2.16",
  "tokio-tungstenite",
- "utils",
  "websocket-requests",
 ]
 
