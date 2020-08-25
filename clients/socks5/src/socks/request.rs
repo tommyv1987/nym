@@ -1,10 +1,10 @@
 use super::types::{AddrType, ResponseCode, SocksProxyError};
 use super::{utils as socks_utils, SOCKS_VERSION};
+use available_reader::read_delay_loop::try_read_data;
 use log::*;
 use std::net::SocketAddr;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
-use utils::read_delay_loop::try_read_data;
 
 /// A Socks5 request hitting the proxy.
 pub(crate) struct SocksRequest {
@@ -116,7 +116,7 @@ impl SocksRequest {
         reader: &mut R,
         remote_address: &str,
     ) -> io::Result<Vec<u8>> {
-        let timeout_duration = std::time::Duration::from_millis(500);
+        let timeout_duration = std::time::Duration::from_millis(2000);
         try_read_data(timeout_duration, reader, remote_address).await
     }
 }

@@ -41,7 +41,7 @@ ordered-buffer = {path = "../../common/socks5/ordered-buffer"}
 pemstore = { path = "../../common/pemstore" }
 socks5-requests = { path = "../../common/socks5/requests" }
 topology = { path = "../../common/topology" }
-utils = { path = "../../common/utils" }
+available-reader = { path = "../../common/socks5/available-reader" }
 
 [build-dependencies]
 built = "0.3.2"

@@ -40,7 +40,7 @@ where
     loop {
         tokio::select! {
             _ = &mut delay => {
-                println!("Timed out. returning {} bytes received from {}", data.len(), address);
+                println!("Timed out. Returning {} bytes received from {}", data.len(), address);
                 return Ok(data) // we return all response data on timeout
             }
             read_data = &mut available_reader => {

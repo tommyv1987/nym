@@ -10,6 +10,7 @@ use client_core::client::{
 use futures::lock::Mutex;
 use log::*;
 use nymsphinx::addressing::clients::Recipient;
+use ordered_buffer::OrderedMessageBuffer;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::net::TcpListener;
 
@@ -69,6 +70,7 @@ impl SphinxSocksServer {
                     self.service_provider.clone(),
                     Arc::clone(&active_streams),
                     self.self_address.clone(),
+                    OrderedMessageBuffer::new(),
                 );
 
                 tokio::spawn(async move {

@@ -13,6 +13,7 @@ pub struct OrderedMessageBuffer {
 
 impl OrderedMessageBuffer {
     pub fn new() -> OrderedMessageBuffer {
+        println!("Creating ordered message buffer.");
         OrderedMessageBuffer {
             next_index: 0,
             messages: Vec::new(),
@@ -23,6 +24,12 @@ impl OrderedMessageBuffer {
     /// that later on multiple reads for incomplete sequences don't result in
     /// useless sort work.
     pub fn write(&mut self, message: OrderedMessage) {
+        println!(
+            "Writing message index: {} length {:?} to OrderedMessageBuffer.",
+            message.index,
+            message.data.len()
+        );
+
         self.messages.push(message);
         OrderedMessageBuffer::insertion_sort(&mut self.messages);
     }
@@ -53,13 +60,15 @@ impl OrderedMessageBuffer {
             // advance the index because we've read stuff up to a new high water mark
             let high_water = index + contiguous_messages.len() as u64 - 1;
             self.next_index = high_water;
+            println!("Next high water mark is: {}", high_water);
 
             // dig out the bytes from inside the struct
-            let data = contiguous_messages
+            let data: Vec<u8> = contiguous_messages
                 .iter()
                 .flat_map(|message| message.data.clone())
                 .collect();
 
+            println!("Returning {} bytes from ordered message buffer", data.len());
             Some(data)
         }
     }

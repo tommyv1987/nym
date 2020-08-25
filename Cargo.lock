@@ -3138,6 +3138,7 @@ dependencies = [
 name = "socks5"
 version = "0.8.0-dev"
 dependencies = [
+ "available-reader",
  "bs58",
  "built",
  "clap",
@@ -3169,7 +3170,6 @@ dependencies = [
  "tokio-tungstenite",
  "topology",
  "url 2.1.1",
- "utils",
 ]
 
 [[package]]
@@ -3777,15 +3777,6 @@ name = "utf-8"
 version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05e42f7c18b8f902290b009cde6d651262f956c98bc51bca4cd1d511c9cd85c7"
-
-[[package]]
-name = "utils"
-version = "0.1.0"
-dependencies = [
- "bytes 0.5.4",
- "tokio 0.2.16",
- "tokio-test",
-]
 
 [[package]]
 name = "uuid"

@@ -1,9 +1,10 @@
+use available_reader::available_reader::AvailableReader;
 use nymsphinx::addressing::clients::Recipient;
 use ordered_buffer::{OrderedMessage, OrderedMessageSender};
 use socks5_requests::{ConnectionId, RemoteAddress};
 use tokio::net::TcpStream;
 use tokio::prelude::*;
-use utils::read_delay_loop::try_read_data;
+// use utils::read_delay_loop::try_read_data;
 
 /// A TCP connection between the Socks5 service provider, which makes
 /// outbound requests on behalf of users, and a remote system. Makes the request,
@@ -51,7 +52,7 @@ impl Connection {
     }
 
     pub(crate) async fn send_data(&mut self, data: &[u8]) -> io::Result<()> {
-        // get data, if there is any, from the request_buffer
+        // TODO outbound: get data, if there is any, from the request_buffer
         println!("Sending {} bytes to {}", data.len(), self.address);
         self.conn.write_all(&data).await
     }
@@ -59,10 +60,16 @@ impl Connection {
     /// Read response data by looping, waiting for anything we get back from the
     /// remote server. Returns once it times out or the connection closes.
     pub(crate) async fn try_read_response_data(&mut self) -> io::Result<OrderedMessage> {
-        let timeout_duration = std::time::Duration::from_millis(500);
-        let data = try_read_data(timeout_duration, &mut self.conn, &self.address).await?;
-        // take the returned bytes (if there are any) and run them through this
-        // connection's response_sender. Then return the ordered messages.
-        Ok(self.response_sender.to_message(data))
+        let available_reader = AvailableReader::new(&mut self.conn);
+        let data = available_reader.await?.to_vec();
+        if data.is_empty() {
+            return Err(io::Error::new(
+                io::ErrorKind::BrokenPipe,
+                "Connection closed",
+            ));
+        }
+
+        let message = self.response_sender.into_message(data);
+        Ok(message)
     }
 }

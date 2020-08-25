@@ -17,6 +17,7 @@ use super::authentication::{AuthenticationMethods, Authenticator, User};
 use super::request::{SocksCommand, SocksRequest};
 use super::types::{ResponseCode, SocksProxyError};
 use super::{RESERVED, SOCKS_VERSION};
+use ordered_buffer::{OrderedMessage, OrderedMessageBuffer};
 use socks5_requests::{ConnectionId, Request};
 
 /// A client connecting to the Socks proxy server, because
@@ -33,9 +34,10 @@ pub(crate) struct SocksClient {
     connection_id: ConnectionId,
     service_provider: Recipient,
     self_address: Recipient,
+    response_buffer: OrderedMessageBuffer,
 }
 
-type StreamResponseSender = oneshot::Sender<Vec<u8>>;
+type StreamResponseSender = oneshot::Sender<OrderedMessage>;
 
 pub(crate) type ActiveStreams = Arc<Mutex<HashMap<ConnectionId, StreamResponseSender>>>;
 
@@ -54,6 +56,7 @@ impl SocksClient {
         service_provider: Recipient,
         active_streams: ActiveStreams,
         self_address: Recipient,
+        response_buffer: OrderedMessageBuffer,
     ) -> Self {
         let connection_id = Self::generate_random();
         SocksClient {
@@ -66,6 +69,7 @@ impl SocksClient {
             input_sender,
             service_provider,
             self_address,
+            response_buffer,
         }
     }
 
@@ -118,7 +122,10 @@ impl SocksClient {
         self.send_to_mixnet(request.into_bytes()).await;
     }
 
-    async fn send_request_to_mixnet_and_get_response(&mut self, request: Request) -> Vec<u8> {
+    async fn send_request_to_mixnet_and_get_response(
+        &mut self,
+        request: Request,
+    ) -> OrderedMessage {
         self.send_to_mixnet(request.into_bytes()).await;
 
         // refactor idea: crossbeam oneshot channels are faster
@@ -156,10 +163,21 @@ impl SocksClient {
                     request_data_bytes,
                     self.self_address.clone(),
                 );
-                let response_data = self
+                let response_message = self
                     .send_request_to_mixnet_and_get_response(socks_provider_request)
                     .await;
-                self.stream.write_all(&response_data).await.unwrap();
+                self.response_buffer.write(response_message);
+                if let Some(data) = self.response_buffer.read() {
+                    println!("1 Got {:?} bytes from response_buffer", data.len());
+                    if let Err(err) = self.stream.write_all(&data).await {
+                        error!(
+                            "tried to write to (presumably) closed connection - {:?}",
+                            err
+                        );
+                    }
+                } else {
+                    error!("If this is hit, Andrew expects a deadlock!");
+                }
 
                 loop {
                     if let Ok(request_data_bytes) =
@@ -170,18 +188,23 @@ impl SocksClient {
                         }
                         let socks_provider_request =
                             Request::new_send(self.connection_id, request_data_bytes);
-                        let response_data = self
+                        let response_message = self
                             .send_request_to_mixnet_and_get_response(socks_provider_request)
                             .await;
-                        if let Err(err) = self.stream.write_all(&response_data).await {
-                            error!(
-                                "tried to write to (presumably) closed connection - {:?}",
-                                err
-                            );
+                        self.response_buffer.write(response_message);
+                        if let Some(data) = self.response_buffer.read() {
+                            println!("2 Got {:?} bytes from response_buffer", data.len());
+
+                            if let Err(err) = self.stream.write_all(&data).await {
+                                error!(
+                                    "tried to write to (presumably) closed connection - {:?}",
+                                    err
+                                );
+                                break;
+                            }
+                        } else {
                             break;
                         }
-                    } else {
-                        break;
                     }
                 }
                 let socks_provider_request = Request::new_close(self.connection_id);
