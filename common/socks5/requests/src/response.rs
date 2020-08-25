@@ -1,10 +1,20 @@
 use crate::ConnectionId;
+use ordered_buffer::MessageError;
 use ordered_buffer::OrderedMessage;
 
 #[derive(Debug, PartialEq)]
 pub enum ResponseError {
     ConnectionIdTooShort,
     NoData,
+    OrderedMessageDeserializationError,
+}
+
+impl From<MessageError> for ResponseError {
+    fn from(e: MessageError) -> Self {
+        match e {
+            _ => ResponseError::OrderedMessageDeserializationError,
+        }
+    }
 }
 /// A remote network response retrieved by the Socks5 service provider. This
 /// can be serialized and sent back through the mixnet to the requesting
@@ -34,7 +44,7 @@ impl Response {
         }
 
         let mut connection_id_bytes = b.to_vec();
-        let index_bytes = connection_id_bytes.split_off(8);
+        let data = connection_id_bytes.split_off(8);
 
         let connection_id = u64::from_be_bytes([
             connection_id_bytes[0],
@@ -47,8 +57,7 @@ impl Response {
             connection_id_bytes[7],
         ]);
 
-        let data = index_bytes.to_vec().split_off(8);
-        let message = OrderedMessage::from_be_bytes(data);
+        let message = OrderedMessage::try_from_bytes(data)?;
         let response = Response::new(connection_id, message);
         Ok(response)
     }
