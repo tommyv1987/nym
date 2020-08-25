@@ -92,9 +92,7 @@ mod tests {
     async fn available_reader_reads_all_available_data_smaller_than_its_buf() {
         let data = vec![42u8; 100];
         let mut reader = Cursor::new(data.clone());
-
         let available_reader = AvailableReader::new(&mut reader);
-
         assert_eq!(available_reader.await.unwrap(), data)
     }
 
@@ -102,9 +100,7 @@ mod tests {
     async fn available_reader_reads_all_available_data_bigger_than_its_buf() {
         let data = vec![42u8; AvailableReader::<Cursor<Vec<u8>>>::BUF_INCREMENT + 100];
         let mut reader = Cursor::new(data.clone());
-
         let available_reader = AvailableReader::new(&mut reader);
-
         assert_eq!(available_reader.await.unwrap(), data)
     }
 
@@ -112,7 +108,6 @@ mod tests {
     async fn available_reader_will_not_wait_for_more_data_if_it_already_has_some() {
         let first_data_chunk = vec![42u8; 100];
         let second_data_chunk = vec![123u8; 100];
-
         let mut reader_mock = tokio_test::io::Builder::new()
             .read(&first_data_chunk)
             .wait(Duration::from_millis(100)) // delay is irrelevant, what matters is that we don't get everything immediately
@@ -120,21 +115,18 @@ mod tests {
             .build();
 
         let available_reader = AvailableReader::new(&mut reader_mock);
-
         assert_eq!(available_reader.await.unwrap(), first_data_chunk);
     }
 
     #[tokio::test]
     async fn available_reader_will_wait_for_more_data_if_it_doesnt_have_anything() {
         let data = vec![42u8; 100];
-
         let mut reader_mock = tokio_test::io::Builder::new()
             .wait(Duration::from_millis(100))
             .read(&data)
             .build();
 
         let available_reader = AvailableReader::new(&mut reader_mock);
-
         assert_eq!(available_reader.await.unwrap(), data);
     }
 }
