@@ -5,7 +5,7 @@ use futures::channel::mpsc;
 use futures::StreamExt;
 use log::*;
 use nymsphinx::receiver::ReconstructedMessage;
-use ordered_buffer::{OrderedMessage, OrderedMessageBuffer};
+use ordered_buffer::OrderedMessageBuffer;
 use socks5_requests::Response;
 
 pub(crate) struct MixnetResponseListener {
@@ -44,18 +44,18 @@ impl MixnetResponseListener {
 
     async fn on_message(&mut self, reconstructed_message: ReconstructedMessage) {
         let raw_message = reconstructed_message.message;
-        let ordered_message = OrderedMessage::from_be_bytes(raw_message);
-        self.response_buffer.write(ordered_message);
         if reconstructed_message.reply_SURB.is_some() {
             println!("this message had a surb - we didn't do anything with it");
         }
-
         let response = match Response::try_from_bytes(&raw_message) {
             Err(err) => {
                 warn!("failed to parse received response - {:?}", err);
                 return;
             }
-            Ok(data) => data,
+            Ok(data) => {
+                self.response_buffer.write(data.message.clone());
+                data
+            }
         };
 
         let mut active_streams_guard = self.active_streams.lock().await;
@@ -64,7 +64,7 @@ impl MixnetResponseListener {
         // for it to persist after we send data back
         if let Some(stream_receiver) = active_streams_guard.remove(&response.connection_id) {
             if let Some(msg) = self.response_buffer.read() {
-                stream_receiver.send(msg).unwrap() // TODO use message!
+                stream_receiver.send(msg).unwrap()
             }
         } else {
             warn!(
