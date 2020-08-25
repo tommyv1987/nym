@@ -13,6 +13,9 @@ pub struct OrderedMessage {
 }
 
 impl OrderedMessage {
+    /// Serializes an `OrderedMessage` into bytes.
+    /// The output format is:
+    /// | 8 bytes index | data... |
     pub fn into_bytes(self) -> Vec<u8> {
         self.index
             .to_be_bytes()
@@ -22,6 +25,7 @@ impl OrderedMessage {
             .collect()
     }
 
+    /// Attempts to deserialize an `OrderedMessage` from bytes.
     pub fn try_from_bytes(data: Vec<u8>) -> Result<OrderedMessage, MessageError> {
         if data.len() == 0 {
             return Err(MessageError::NoData);
@@ -40,6 +44,7 @@ impl OrderedMessage {
     }
 }
 
+/// Order messages by their index only, ignoring their data
 impl Ord for OrderedMessage {
     fn cmp(&self, other: &Self) -> Ordering {
         (self.index).cmp(&(other.index))
