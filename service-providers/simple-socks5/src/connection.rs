@@ -1,10 +1,13 @@
 use available_reader::available_reader::AvailableReader;
+use io::ErrorKind;
+use log::error;
 use nymsphinx::addressing::clients::Recipient;
+use ordered_buffer::OrderedMessageBuffer;
 use ordered_buffer::{OrderedMessage, OrderedMessageSender};
 use socks5_requests::{ConnectionId, RemoteAddress};
+use std::io;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
-// use utils::read_delay_loop::try_read_data;
 
 /// A TCP connection between the Socks5 service provider, which makes
 /// outbound requests on behalf of users, and a remote system. Makes the request,
@@ -16,6 +19,7 @@ pub(crate) struct Connection {
     address: RemoteAddress,
     conn: TcpStream,
     return_address: Recipient,
+    request_buffer: OrderedMessageBuffer,
     response_sender: OrderedMessageSender,
 }
 
@@ -25,8 +29,8 @@ impl Connection {
         address: RemoteAddress,
         initial_data: &[u8],
         response_sender: OrderedMessageSender,
+        request_buffer: OrderedMessageBuffer,
         return_address: Recipient,
-        // request_buffer: OrderedMessageBuffer,
     ) -> io::Result<Self> {
         let conn = match TcpStream::connect(&address).await {
             Ok(conn) => conn,
@@ -39,6 +43,7 @@ impl Connection {
             id,
             address,
             conn,
+            request_buffer,
             response_sender,
             return_address,
         };
@@ -52,9 +57,27 @@ impl Connection {
     }
 
     pub(crate) async fn send_data(&mut self, data: &[u8]) -> io::Result<()> {
-        // TODO outbound: get data, if there is any, from the request_buffer
-        println!("Sending {} bytes to {}", data.len(), self.address);
-        self.conn.write_all(&data).await
+        let message = match OrderedMessage::try_from_bytes(data.to_vec()) {
+            Ok(message) => message,
+            _ => {
+                return Err(io::Error::new(
+                    ErrorKind::Other,
+                    "Can't ordered message bytes from request",
+                ))
+            }
+        };
+        self.request_buffer.write(message);
+        if let Some(data) = self.request_buffer.read() {
+            println!("Sending {} bytes to {}", data.len(), self.address);
+
+            if let Err(err) = self.conn.write_all(&data).await {
+                error!(
+                    "tried to write to (presumably) closed connection - {:?}",
+                    err
+                );
+            }
+        }
+        Ok(())
     }
 
     /// Read response data by looping, waiting for anything we get back from the

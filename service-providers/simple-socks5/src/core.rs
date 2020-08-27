@@ -71,14 +71,6 @@ impl ServiceProvider {
         }
     }
 
-    // /// Keep running until the user hits CTRL-C.
-    // pub fn run_forever(&mut self) {
-    //     if let Err(e) = self.runtime.block_on(tokio::signal::ctrl_c()) {
-    //         println!("Stopping with error: {:?}", e);
-    //     }
-    //     println!("\nStopping...");
-    // }
-
     // Make the websocket connection so we can receive incoming Mixnet messages.
     async fn connect_websocket(&mut self, uri: &str) -> WebSocketStream<TcpStream> {
         let ws_stream = match websocket::Connection::new(uri).connect().await {

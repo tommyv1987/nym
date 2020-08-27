@@ -1,4 +1,5 @@
 use nymsphinx_addressing::clients::{Recipient, RecipientFormattingError};
+use ordered_buffer::OrderedMessage;
 use std::convert::TryFrom;
 
 pub type ConnectionId = u64;
@@ -55,12 +56,12 @@ pub enum Request {
     Connect {
         conn_id: ConnectionId,
         remote_addr: RemoteAddress,
-        data: Vec<u8>, // change to ordered message
+        message: OrderedMessage,
         return_address: Recipient,
     },
 
     /// Re-use an existing TCP connection, sending more request data up it.
-    Send(ConnectionId, Vec<u8>),
+    Send(ConnectionId, OrderedMessage),
 
     /// Close an existing TCP connection.
     Close(ConnectionId),
@@ -71,20 +72,20 @@ impl Request {
     pub fn new_connect(
         conn_id: ConnectionId,
         remote_addr: RemoteAddress,
-        data: Vec<u8>,
+        message: OrderedMessage,
         return_address: Recipient,
     ) -> Request {
         Request::Connect {
             conn_id,
             remote_addr,
-            data,
+            message,
             return_address,
         }
     }
 
     /// Construct a new Request::Send instance
-    pub fn new_send(conn_id: ConnectionId, data: Vec<u8>) -> Request {
-        Request::Send(conn_id, data)
+    pub fn new_send(conn_id: ConnectionId, message: OrderedMessage) -> Request {
+        Request::Send(conn_id, message)
     }
 
     /// Construct a new Request::Close instance
@@ -148,14 +149,22 @@ impl Request {
                 let return_address = Recipient::try_from_bytes(return_bytes)
                     .map_err(|err| RequestError::MalformedReturnAddress(err))?;
 
+                let message =
+                    OrderedMessage::try_from_bytes(recipient_data_bytes[Recipient::LEN..].to_vec())
+                        .unwrap();
+
                 Ok(Request::Connect {
                     conn_id: connection_id,
                     remote_addr: remote_address,
-                    data: recipient_data_bytes[Recipient::LEN..].to_vec(),
+                    message,
                     return_address,
                 })
             }
-            RequestFlag::Send => Ok(Request::Send(connection_id, b[9..].as_ref().to_vec())),
+            RequestFlag::Send => {
+                let bytes = b[9..].as_ref().to_vec();
+                let message = OrderedMessage::try_from_bytes(bytes).unwrap();
+                Ok(Request::Send(connection_id, message))
+            }
             RequestFlag::Close => Ok(Request::Close(connection_id)),
         }
     }
@@ -165,11 +174,11 @@ impl Request {
     /// service provider which will make the request.
     pub fn into_bytes(self) -> Vec<u8> {
         match self {
-            // connect is: CONN_FLAG || CONN_ID || REMOTE_LEN || REMOTE || RETURN || DATA
+            // connect is: CONN_FLAG || CONN_ID || REMOTE_LEN || REMOTE || RETURN || MESSAGE (index + data)
             Request::Connect {
                 conn_id,
                 remote_addr,
-                data,
+                message,
                 return_address,
             } => {
                 let remote_address_bytes = remote_addr.into_bytes();
@@ -180,12 +189,12 @@ impl Request {
                     .chain(remote_address_bytes_len.to_be_bytes().iter().cloned())
                     .chain(remote_address_bytes.into_iter())
                     .chain(return_address.to_bytes().iter().cloned())
-                    .chain(data.into_iter())
+                    .chain(message.into_bytes())
                     .collect()
             }
-            Request::Send(conn_id, data) => std::iter::once(RequestFlag::Send as u8)
+            Request::Send(conn_id, message) => std::iter::once(RequestFlag::Send as u8)
                 .chain(conn_id.to_be_bytes().iter().cloned())
-                .chain(data.into_iter())
+                .chain(message.into_bytes())
                 .collect(),
             Request::Close(conn_id) => std::iter::once(RequestFlag::Close as u8)
                 .chain(conn_id.to_be_bytes().iter().cloned())
@@ -195,7 +204,7 @@ impl Request {
 }
 
 #[cfg(test)]
-mod request_deserialization_tests {
+mod request_deserialization {
     use super::*;
 
     mod all_request_types {
@@ -332,7 +341,7 @@ mod request_deserialization_tests {
 
         #[test]
         fn works_when_request_is_sized_properly_even_without_data() {
-            // this one has "foo.com" remote address, correct 8 bytes of connection_id, and 0 bytes request data
+            // this one has "foo.com" remote address, correct 8 bytes of connection_id, ordered message with index 1, and 0 bytes request data
             let request_bytes = [
                 RequestFlag::Connect as u8,
                 1,
@@ -361,6 +370,7 @@ mod request_deserialization_tests {
             let request_bytes: Vec<_> = request_bytes
                 .into_iter()
                 .chain(recipient_bytes.iter().cloned())
+                .chain(vec![0, 0, 0, 0, 0, 0, 0, 1]) // message index 1
                 .collect();
 
             let request = Request::try_from_bytes(&request_bytes).unwrap();
@@ -368,7 +378,7 @@ mod request_deserialization_tests {
                 Request::Connect {
                     conn_id,
                     remote_addr,
-                    data,
+                    message,
                     return_address,
                 } => {
                     assert_eq!("foo.com".to_string(), remote_addr);
@@ -377,7 +387,8 @@ mod request_deserialization_tests {
                         return_address.to_bytes().to_vec(),
                         recipient.to_bytes().to_vec()
                     );
-                    assert_eq!(Vec::<u8>::new(), data);
+                    assert_eq!(1, message.index);
+                    assert_eq!(Vec::<u8>::new(), message.data);
                 }
                 _ => unreachable!(),
             }
@@ -414,6 +425,7 @@ mod request_deserialization_tests {
             let request_bytes: Vec<_> = request_bytes
                 .into_iter()
                 .chain(recipient_bytes.iter().cloned())
+                .chain(vec![0, 0, 0, 0, 0, 0, 0, 1]) // ordered message sequence number 1
                 .chain(vec![255, 255, 255].into_iter())
                 .collect();
 
@@ -422,7 +434,7 @@ mod request_deserialization_tests {
                 Request::Connect {
                     conn_id,
                     remote_addr,
-                    data,
+                    message,
                     return_address,
                 } => {
                     assert_eq!("foo.com".to_string(), remote_addr);
@@ -431,7 +443,8 @@ mod request_deserialization_tests {
                         return_address.to_bytes().to_vec(),
                         recipient.to_bytes().to_vec()
                     );
-                    assert_eq!(vec![255, 255, 255], data);
+                    assert_eq!(1, message.index);
+                    assert_eq!(vec![255, 255, 255], message.data);
                 }
                 _ => unreachable!(),
             }
@@ -448,9 +461,9 @@ mod request_deserialization_tests {
             let request_bytes = [RequestFlag::Send as u8, 1, 2, 3, 4, 5, 6, 7, 8].to_vec();
             let request = Request::try_from_bytes(&request_bytes).unwrap();
             match request {
-                Request::Send(conn_id, data) => {
+                Request::Send(conn_id, message) => {
                     assert_eq!(u64::from_be_bytes([1, 2, 3, 4, 5, 6, 7, 8]), conn_id);
-                    assert_eq!(Vec::<u8>::new(), data);
+                    assert_eq!(Vec::<u8>::new(), message.data);
                 }
                 _ => unreachable!(),
             }
@@ -477,9 +490,9 @@ mod request_deserialization_tests {
 
             let request = Request::try_from_bytes(&request_bytes).unwrap();
             match request {
-                Request::Send(conn_id, data) => {
+                Request::Send(conn_id, message) => {
                     assert_eq!(u64::from_be_bytes([1, 2, 3, 4, 5, 6, 7, 8]), conn_id);
-                    assert_eq!(vec![255, 255, 255], data);
+                    assert_eq!(vec![255, 255, 255], message.data);
                 }
                 _ => unreachable!(),
             }

@@ -17,7 +17,7 @@ use super::authentication::{AuthenticationMethods, Authenticator, User};
 use super::request::{SocksCommand, SocksRequest};
 use super::types::{ResponseCode, SocksProxyError};
 use super::{RESERVED, SOCKS_VERSION};
-use ordered_buffer::{OrderedMessage, OrderedMessageBuffer};
+use ordered_buffer::{OrderedMessage, OrderedMessageBuffer, OrderedMessageSender};
 use socks5_requests::{ConnectionId, Request};
 
 /// A client connecting to the Socks proxy server, because
@@ -34,6 +34,7 @@ pub(crate) struct SocksClient {
     connection_id: ConnectionId,
     service_provider: Recipient,
     self_address: Recipient,
+    request_sender: OrderedMessageSender,
     response_buffer: OrderedMessageBuffer,
 }
 
@@ -56,6 +57,7 @@ impl SocksClient {
         service_provider: Recipient,
         active_streams: ActiveStreams,
         self_address: Recipient,
+        request_sender: OrderedMessageSender,
         response_buffer: OrderedMessageBuffer,
     ) -> Self {
         let connection_id = Self::generate_random();
@@ -69,6 +71,7 @@ impl SocksClient {
             input_sender,
             service_provider,
             self_address,
+            request_sender,
             response_buffer,
         }
     }
@@ -222,9 +225,13 @@ impl SocksClient {
     /// will be chunked up into a series of one or more Sphinx packets and
     /// reassembled at the destination service provider at the other end, then
     /// sent onwards anonymously.
-    async fn send_to_mixnet(&self, request_bytes: Vec<u8>) {
+    async fn send_to_mixnet(&mut self, raw_request_bytes: Vec<u8>) {
+        let ordered_message_bytes = self
+            .request_sender
+            .into_message(raw_request_bytes)
+            .into_bytes();
         let input_message =
-            InputMessage::new_fresh(self.service_provider.clone(), request_bytes, false);
+            InputMessage::new_fresh(self.service_provider.clone(), ordered_message_bytes, false);
         self.input_sender.unbounded_send(input_message).unwrap();
     }
 

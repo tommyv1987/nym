@@ -1,6 +1,6 @@
 use super::types::{AddrType, ResponseCode, SocksProxyError};
 use super::{utils as socks_utils, SOCKS_VERSION};
-use available_reader::read_delay_loop::try_read_data;
+use available_reader::available_reader::AvailableReader;
 use log::*;
 use std::net::SocketAddr;
 use tokio::net::TcpStream;
@@ -116,8 +116,19 @@ impl SocksRequest {
         reader: &mut R,
         remote_address: &str,
     ) -> io::Result<Vec<u8>> {
-        let timeout_duration = std::time::Duration::from_millis(2000);
-        try_read_data(timeout_duration, reader, remote_address).await
+        let available_reader = AvailableReader::new(reader);
+        let data = available_reader.await?.to_vec();
+        if data.is_empty() {
+            return Err(io::Error::new(
+                io::ErrorKind::BrokenPipe,
+                format!(
+                    "Connection for {} closed by socks proxy read-side",
+                    remote_address
+                ),
+            ));
+        }
+        format!("Read {} bytes to send to {} ", data.len(), remote_address);
+        Ok(data)
     }
 }
 
