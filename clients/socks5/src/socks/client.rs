@@ -160,12 +160,16 @@ impl SocksClient {
 
                 let request_data_bytes =
                     SocksRequest::try_read_request_data(&mut self.stream, &client_address).await?;
+                let message = self.request_sender.into_message(request_data_bytes);
                 let socks_provider_request = Request::new_connect(
                     self.connection_id,
                     remote_address.clone(),
-                    request_data_bytes,
+                    message,
                     self.self_address.clone(),
                 );
+                println!("SENDING: {:?}", socks_provider_request);
+                let b = socks_provider_request.clone().into_bytes();
+                println!("bytes are: {:?}", b);
                 let response_message = self
                     .send_request_to_mixnet_and_get_response(socks_provider_request)
                     .await;
@@ -189,8 +193,10 @@ impl SocksClient {
                         if request_data_bytes.is_empty() {
                             break;
                         }
+                        let request_message: OrderedMessage =
+                            self.request_sender.into_message(request_data_bytes);
                         let socks_provider_request =
-                            Request::new_send(self.connection_id, request_data_bytes);
+                            Request::new_send(self.connection_id, request_message);
                         let response_message = self
                             .send_request_to_mixnet_and_get_response(socks_provider_request)
                             .await;

@@ -48,7 +48,7 @@ impl TryFrom<u8> for RequestFlag {
 
 /// A request from a SOCKS5 client that a Nym Socks5 service provider should
 /// take an action for an application using a (probably local) Nym Socks5 proxy.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Request {
     /// Start a new TCP connection to the specified `RemoteAddress` and send
     /// the request data up the connection.
@@ -115,6 +115,7 @@ impl Request {
         if b.len() < 9 {
             return Err(RequestError::ConnectionIdTooShort);
         }
+        println!("try_from_bytes: {:?}", b);
         let connection_id = u64::from_be_bytes([b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]]);
         match RequestFlag::try_from(b[0])? {
             RequestFlag::Connect => {
@@ -200,6 +201,21 @@ impl Request {
                 .chain(conn_id.to_be_bytes().iter().cloned())
                 .collect(),
         }
+    }
+}
+
+#[cfg(test)]
+mod request_serialization_and_deserialization {
+    use super::*;
+
+    #[test]
+    fn works() {
+        let connection_id = 1234;
+        let orginal_close_request = Request::new_close(connection_id);
+        let close_bytes = orginal_close_request.into_bytes();
+
+        let rebuilt_close_request = Request::try_from_bytes(&close_bytes).unwrap();
+        assert_eq!(orginal_close_request, rebuilt_close_request);
     }
 }
 
@@ -458,7 +474,26 @@ mod request_deserialization {
         #[test]
         fn works_when_request_is_sized_properly_even_without_data() {
             // correct 8 bytes of connection_id, and 0 bytes request data
-            let request_bytes = [RequestFlag::Send as u8, 1, 2, 3, 4, 5, 6, 7, 8].to_vec();
+            let request_bytes = [
+                RequestFlag::Send as u8,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+            ]
+            .to_vec();
             let request = Request::try_from_bytes(&request_bytes).unwrap();
             match request {
                 Request::Send(conn_id, message) => {
@@ -482,6 +517,14 @@ mod request_deserialization {
                 6,
                 7,
                 8,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
                 255,
                 255,
                 255,

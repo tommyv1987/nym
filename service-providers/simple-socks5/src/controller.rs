@@ -40,16 +40,22 @@ impl Controller {
             Request::Connect {
                 conn_id,
                 remote_addr,
-                data,
+                message,
                 return_address,
             } => {
                 let response = self
-                    .create_new_connection(conn_id, remote_addr, data, return_address.clone())
+                    .create_new_connection(
+                        conn_id,
+                        remote_addr,
+                        message.data,
+                        return_address.clone(),
+                    )
                     .await?;
                 Ok(Some((response, return_address)))
             }
-            Request::Send(conn_id, data) => {
-                let (response, return_address) = self.send_to_connection(conn_id, data).await?;
+            Request::Send(conn_id, message) => {
+                let (response, return_address) =
+                    self.send_to_connection(conn_id, message.data).await?;
                 Ok(Some((response, return_address)))
             }
             Request::Close(conn_id) => {

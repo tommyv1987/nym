@@ -284,9 +284,10 @@ impl NymClient {
     }
     // TODO: make this configurable in the client config file
     fn load_socks5_service_provider(&self) -> Recipient {
-        let identity = "3rbaAciPGrXfdKgPzzLR4tvQNA6dckYYh6Ruh4DmMC5S";
-        let encryption_key = "5FvmwhVMsnPcViVekD6TXiggtPH4DkCVaJCfmueKZvs3";
-        let gateway_key = "e3vUAo6YhB7zq3GH8B4k3iiGT4H2USjdd5ZMZoUsHdF";
+        // load from file here, or better yet, inject it
+        let identity = "HvdQMN9RwwA8A66FZx36FwfQAf4gCJ5zvgVp2AJky4bX";
+        let encryption_key = "54tTYA7mgMvaFkoCPrMkpebtWrpqQEwRohydmFfAFafK";
+        let gateway_key = "FJUx1uT2EXtKFPwRD8a71Gi4NsnkWoShuAbb12eAckmy";
 
         let client_identity = ClientIdentity::from_base58_string(identity).unwrap();
         let client_encryption_key =
