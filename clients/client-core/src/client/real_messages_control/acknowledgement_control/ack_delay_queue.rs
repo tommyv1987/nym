@@ -38,7 +38,9 @@ impl<T> AckDelayQueue<T> {
     }
 
     pub fn insert(&mut self, value: T, timeout: Duration) -> delay_queue::Key {
+        println!("before inserting; {:?}", timeout);
         let key = self.inner.insert(value, timeout);
+        println!("after inserting. key: {:?}", key);
         if let Some(waker) = self.waker.take() {
             // we were waiting for an item - wake the executor!
             waker.wake()
@@ -47,7 +49,10 @@ impl<T> AckDelayQueue<T> {
     }
 
     pub fn remove(&mut self, key: &delay_queue::Key) -> Expired<T> {
-        self.inner.remove(key)
+        println!("before removing {:?}", key);
+        let expired = self.inner.remove(key);
+        println!("after removing");
+        expired
     }
 }
 
@@ -57,7 +62,10 @@ impl<T> Stream for AckDelayQueue<T> {
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         match Pin::new(&mut self.inner).poll_next(cx) {
             Poll::Pending => Poll::Pending,
-            Poll::Ready(Some(item)) => Poll::Ready(Some(item)),
+            Poll::Ready(Some(item)) => {
+                println!("returning an item");
+                Poll::Ready(Some(item))
+            }
             Poll::Ready(None) => {
                 // we'll need to keep the waker to notify the executor once we get new item
                 self.waker = Some(cx.waker().clone());
