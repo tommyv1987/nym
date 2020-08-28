@@ -196,7 +196,7 @@ mod test_chunking_and_reassembling {
                 buffer
             }
             #[test]
-            fn everything_up_to_the_indexing_gap_is_returned_xxx() {
+            fn everything_up_to_the_indexing_gap_is_returned() {
                 let mut buffer = setup();
                 let ordered_bytes = buffer.read().unwrap();
                 assert_eq!([0, 0, 0, 0, 1, 1, 1, 1].to_vec(), ordered_bytes);

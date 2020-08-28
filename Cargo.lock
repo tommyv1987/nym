@@ -3176,6 +3176,7 @@ dependencies = [
 name = "socks5-requests"
 version = "0.1.0"
 dependencies = [
+ "crypto",
  "nymsphinx-addressing",
  "ordered-buffer",
 ]

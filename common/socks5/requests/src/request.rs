@@ -67,6 +67,40 @@ pub enum Request {
     Close(ConnectionId),
 }
 
+impl PartialEq<Request> for Request {
+    fn eq(&self, other: &Self) -> bool {
+        use Request::*;
+        match (self, other) {
+            (Close(conn_id_a), Close(conn_id_b)) => conn_id_a == conn_id_b,
+            (Send(conn_id_a, message_a), Send(conn_id_b, message_b)) => {
+                conn_id_a == conn_id_b && message_a == message_b
+            }
+            (
+                Connect {
+                    conn_id: conn_id_a,
+                    remote_addr: remote_addr_a,
+                    message: message_a,
+                    return_address: return_address_a,
+                },
+                Connect {
+                    conn_id: conn_id_b,
+                    remote_addr: remote_addr_b,
+                    message: message_b,
+                    return_address: return_address_b,
+                },
+            ) => {
+                let return_a_bytes = return_address_a.to_bytes();
+                let return_b_bytes = return_address_b.to_bytes();
+                conn_id_a == conn_id_b
+                    && remote_addr_a == remote_addr_b
+                    && message_a == message_b
+                    && return_a_bytes.to_vec() == return_b_bytes.to_vec()
+            }
+            _ => false,
+        }
+    }
+}
+
 impl Request {
     /// Construct a new Request::Connect instance
     pub fn new_connect(
@@ -115,7 +149,6 @@ impl Request {
         if b.len() < 9 {
             return Err(RequestError::ConnectionIdTooShort);
         }
-        println!("try_from_bytes: {:?}", b);
         let connection_id = u64::from_be_bytes([b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]]);
         match RequestFlag::try_from(b[0])? {
             RequestFlag::Connect => {
@@ -207,15 +240,66 @@ impl Request {
 #[cfg(test)]
 mod request_serialization_and_deserialization {
     use super::*;
+    use nymsphinx_addressing::clients::ClientIdentity;
 
     #[test]
-    fn works() {
-        let connection_id = 1234;
-        let orginal_close_request = Request::new_close(connection_id);
-        let close_bytes = orginal_close_request.into_bytes();
+    fn works_for_close() {
+        let connection_id = 5;
+        let close_request = Request::new_close(connection_id);
+        let close_bytes = close_request.clone().into_bytes();
+        println!("close_bytes: {:?}", close_bytes);
 
         let rebuilt_close_request = Request::try_from_bytes(&close_bytes).unwrap();
-        assert_eq!(orginal_close_request, rebuilt_close_request);
+        assert_eq!(close_request, rebuilt_close_request);
+    }
+
+    #[test]
+    fn works_for_send() {
+        let connection_id = 5;
+
+        let message = OrderedMessage {
+            data: vec![255, 255, 255],
+            index: 1,
+        };
+
+        let send_request = Request::new_send(connection_id, message.clone());
+        let send_bytes = send_request.clone().into_bytes();
+        println!("send_bytes: {:?}", send_bytes);
+        let rebuilt_close_request = Request::try_from_bytes(&send_bytes).unwrap();
+        assert_eq!(send_request, rebuilt_close_request);
+    }
+
+    #[test]
+    fn works_for_connect() {
+        let connection_id = 5;
+
+        let message = OrderedMessage {
+            data: vec![255, 255, 255],
+            index: 1,
+        };
+
+        let client_identity =
+            ClientIdentity::from_base58_string("HvdQMN9RwwA8A66FZx36FwfQAf4gCJ5zvgVp2AJky4bX")
+                .unwrap();
+        let client_encryption = crypto::asymmetric::encryption::PublicKey::from_base58_string(
+            "HvdQMN9RwwA8A66FZx36FwfQAf4gCJ5zvgVp2AJky4bX",
+        )
+        .unwrap();
+        let return_addr = Recipient::new(
+            client_identity.clone(),
+            client_encryption,
+            client_identity.clone(),
+        );
+        let connect_request = Request::new_connect(
+            connection_id,
+            "nymtech.net".to_string(),
+            message,
+            return_addr,
+        );
+        let connect_bytes = connect_request.clone().into_bytes();
+        println!("connect_bytes: {:?}", connect_bytes);
+        let rebuilt_connect_request = Request::try_from_bytes(&connect_bytes).unwrap();
+        assert_eq!(connect_request, rebuilt_connect_request);
     }
 }
 

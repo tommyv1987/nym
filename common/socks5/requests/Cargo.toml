@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 nymsphinx-addressing = { path = "../../nymsphinx/addressing" }
 ordered-buffer = {path = "../ordered-buffer"}
+crypto = {path = "../../crypto"}

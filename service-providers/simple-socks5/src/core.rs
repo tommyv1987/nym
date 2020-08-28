@@ -52,7 +52,9 @@ impl ServiceProvider {
                 _ => unimplemented!("probably should never be reached?"),
             };
 
+            println!("received: {:?}", received);
             let raw_message = received.message;
+            println!("raw_message: {:?}", raw_message);
             let request = Request::try_from_bytes(&raw_message).unwrap();
 
             let mut controller_local_pointer = controller.clone();
