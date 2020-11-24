@@ -97,6 +97,10 @@ impl RegisteredMix {
     pub fn layer(&self) -> u64 {
         self.mix_info.layer
     }
+
+    pub fn version(&self) -> String {
+        self.mix_info.node_info.version.clone()
+    }
 }
 
 impl TryInto<topology::mix::Node> for RegisteredMix {

@@ -99,6 +99,7 @@ impl PacketSender {
             .map_err(PacketSenderError::ValidatorError)?
             .mix_nodes
             .into_iter()
+            .filter(|mix| mix.version() == "0.9.1")
             .map(|mix| self.make_test_mix(mix))
             .collect())
     }
