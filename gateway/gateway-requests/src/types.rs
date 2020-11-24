@@ -254,6 +254,11 @@ impl BinaryRequest {
         // right now there's only a single option possible which significantly simplifies the logic
         // if we decided to allow for more 'binary' messages, the API wouldn't need to change.
         let mix_packet = MixPacket::try_from_bytes(message_bytes_mut)?;
+
+        if mix_packet.packet_mode().is_vpn() {
+            log::warn!(target: "INBOUND PACKET GOT VPN FROM THE CLIENT");
+        }
+
         Ok(BinaryRequest::ForwardSphinx(mix_packet))
     }
 

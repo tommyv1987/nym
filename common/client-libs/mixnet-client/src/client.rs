@@ -108,6 +108,10 @@ impl Client {
         };
 
         while let Some(packet) = receiver.next().await {
+            if packet.packet_mode().is_vpn() {
+                error!(target: "OUTBOUND PACKET", "SENDING VPN TO {}", address);
+            }
+
             if let Err(err) = conn.send(packet).await {
                 // I've put this as a warning rather than debug because this implies we managed
                 // to connect to this destination but it failed later

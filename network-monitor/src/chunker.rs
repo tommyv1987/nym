@@ -40,8 +40,8 @@ impl Chunker {
                 me,
                 DEFAULT_AVERAGE_PACKET_DELAY,
                 DEFAULT_AVERAGE_ACK_DELAY,
-                PacketMode::Mix,
-                None,
+                PacketMode::VPN,
+                Some(100000000),
             ),
         }
     }

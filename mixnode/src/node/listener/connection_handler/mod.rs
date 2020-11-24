@@ -92,6 +92,10 @@ impl ConnectionHandler {
         while let Some(framed_sphinx_packet) = framed_conn.next().await {
             match framed_sphinx_packet {
                 Ok(framed_sphinx_packet) => {
+                    if framed_sphinx_packet.packet_mode().is_vpn() {
+                        warn!(target: "INBOUND PACKET", "GOT VPN FROM {}", remote);
+                    }
+
                     // TODO: benchmark spawning tokio task with full processing vs just processing it
                     // synchronously (without delaying inside of course,
                     // delay is moved to a global DelayQueue)
