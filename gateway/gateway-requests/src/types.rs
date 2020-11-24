@@ -256,7 +256,7 @@ impl BinaryRequest {
         let mix_packet = MixPacket::try_from_bytes(message_bytes_mut)?;
 
         if mix_packet.packet_mode().is_vpn() {
-            log::warn!(target: "INBOUND PACKET GOT VPN FROM THE CLIENT");
+            log::warn!(target: "INBOUND PACKET", "GOT VPN FROM THE CLIENT");
         }
 
         Ok(BinaryRequest::ForwardSphinx(mix_packet))
