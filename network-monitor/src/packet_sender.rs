@@ -92,6 +92,14 @@ impl PacketSender {
     }
 
     async fn get_test_mixes(&self) -> Result<Vec<TestMix>, PacketSenderError> {
+        let good_nodes = [
+            "8ULBCsKdhhRYDo2454sS6QAEUSuW8PACHRAfeUSiHGQD",
+            "oc1Voe6jTwcJroYEdihdTGoQem4RRGeX7mHM1F2w9xg",
+            "GEX7TrgJBwqKaXrapZFmr1ga4NXToQtzaiuRugYHpnZ4",
+            "CmidY42B6ismYzu1miaPUjVP3abtbUD1cQ7SgoCoiSf4",
+            "J29MDRHsC1QGPB83Yj27Xesa2r37jyi4CW45BTMjKJwE",
+        ];
+
         Ok(self
             .validator_client
             .get_topology()
@@ -99,7 +107,17 @@ impl PacketSender {
             .map_err(PacketSenderError::ValidatorError)?
             .mix_nodes
             .into_iter()
-            .filter(|mix| mix.version() == "0.9.1")
+            // .filter(|mix| {
+            //     let id = mix.identity();
+            //     for good_node in good_nodes.iter() {
+            //         if &id == good_node {
+            //             return true;
+            //         }
+            //     }
+            //     false
+            // })
+            // .filter(|mix| mix.version() == "0.9.1")
+            .filter(|mix| mix.reputation() > 5000)
             .map(|mix| self.make_test_mix(mix))
             .collect())
     }

@@ -236,7 +236,9 @@ impl Client {
             }
         } else {
             // there was never a connection to begin with
-            debug!("establishing initial connection to {}", address);
+            if packet_mode.is_vpn() {
+                error!("establishing initial connection to {}", address);
+            }
             self.make_connection(address);
             // it's not a 'big' error, but we did not manage to send the packet
             Err(io::Error::new(

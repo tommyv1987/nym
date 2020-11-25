@@ -27,6 +27,8 @@ pub(super) struct TestRun {
     run_nonce: u64,
     expected_run_packets: HashSet<TestPacket>,
     received_packets: Vec<TestPacket>,
+
+    running_stats: HashMap<String, usize>,
 }
 
 #[derive(Default)]
@@ -50,6 +52,10 @@ struct TestReport {
 }
 
 impl TestReport {
+    fn fully_working_clone(&self) -> Vec<String> {
+        self.fully_working.clone()
+    }
+
     fn print(&self, detailed: bool) {
         info!(target: "Test Report", "Sent total of {} packets", self.total_sent);
         info!(target: "Test Report", "Received total of {} packets", self.total_received);
@@ -60,28 +66,41 @@ impl TestReport {
         info!(target: "Test Report", "{} nodes are totally unroutable!", self.completely_unroutable.len());
         info!(target: "Test Report", "{} nodes work fine!", self.fully_working.len());
 
+        let good_nodes = [
+            "8ULBCsKdhhRYDo2454sS6QAEUSuW8PACHRAfeUSiHGQD",
+            "oc1Voe6jTwcJroYEdihdTGoQem4RRGeX7mHM1F2w9xg",
+            "GEX7TrgJBwqKaXrapZFmr1ga4NXToQtzaiuRugYHpnZ4",
+            "CmidY42B6ismYzu1miaPUjVP3abtbUD1cQ7SgoCoiSf4",
+        ];
+
         if detailed {
             info!(target: "Detailed report", "full summary:");
-            for malformed in self.malformed.iter() {
-                info!(target: "Malformed node", "{}", malformed)
-            }
-            for outdated in self.outdated.iter() {
-                info!(target: "Outdated node", "{} (runs v{})", outdated.0, outdated.1)
-            }
-            for v4_node in self.only_ipv4_compatible.iter() {
-                info!(target: "IPv4-only node", "{}", v4_node)
-            }
-
-            for v6_node in self.only_ipv6_compatible.iter() {
-                info!(target: "IPv6-only node", "{}", v6_node)
-            }
-
-            for unroutable in self.completely_unroutable.iter() {
-                info!(target: "Unroutable node", "{}", unroutable)
-            }
+            // for malformed in self.malformed.iter() {
+            //     info!(target: "Malformed node", "{}", malformed)
+            // }
+            // for outdated in self.outdated.iter() {
+            //     info!(target: "Outdated node", "{} (runs v{})", outdated.0, outdated.1)
+            // }
+            // for v4_node in self.only_ipv4_compatible.iter() {
+            //     info!(target: "IPv4-only node", "{}", v4_node)
+            // }
+            //
+            // for v6_node in self.only_ipv6_compatible.iter() {
+            //     info!(target: "IPv6-only node", "{}", v6_node)
+            // }
+            //
+            // for unroutable in self.completely_unroutable.iter() {
+            //     info!(target: "Unroutable node", "{}", unroutable)
+            // }
 
             for working in self.fully_working.iter() {
-                info!(target: "Fully working node", "{}", working)
+                for good_node in good_nodes.iter() {
+                    if working == good_node {
+                        info!("our good node {} is working!", good_node)
+                    }
+                }
+
+                // info!(target: "Fully working node", "{}", working)
             }
         }
     }
@@ -96,6 +115,7 @@ impl TestRun {
             run_nonce,
             expected_run_packets: Default::default(),
             received_packets: vec![],
+            running_stats: Default::default(),
         }
     }
 
@@ -249,6 +269,28 @@ impl TestRun {
 
         if self.print_report {
             self.finalize_report();
+            let fully_working = self.test_report.fully_working_clone();
+            for working_node in fully_working {
+                let working_count = self.running_stats.entry(working_node).or_insert(0);
+                *working_count += 1
+            }
+
+            let mut count_vec: Vec<(&String, &usize)> = self.running_stats.iter().collect();
+            count_vec.sort_by(|a, b| b.1.cmp(a.1));
+
+            let good_count = count_vec
+                .iter()
+                .filter(|top_node| top_node.1 == &(self.run_nonce as usize))
+                .count();
+            info!("good count: {}", good_count);
+
+            for top_node in count_vec
+                .iter()
+                .filter(|top_node| top_node.1 == &(self.run_nonce as usize))
+            {
+                info!("good: {}", top_node.0);
+            }
+
             self.test_report.print(self.print_detailed_report);
         }
 

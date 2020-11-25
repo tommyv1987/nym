@@ -68,6 +68,9 @@ impl PacketForwarder {
                 self.mixnet_client
                     .send_without_response(next_hop, sphinx_packet, packet_mode)
             {
+                if packet_mode.is_vpn() {
+                    error!("failed to forward the packet - {} ({:?})", err, err)
+                }
                 debug!("failed to forward the packet - {}", err)
             }
         }
