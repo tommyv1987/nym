@@ -8,6 +8,7 @@ use crate::PENALISE_OUTDATED;
 use crypto::asymmetric::identity;
 use log::*;
 use std::collections::{HashMap, HashSet};
+use std::fs::File;
 
 #[derive(Default)]
 struct NodeResult {
@@ -66,6 +67,37 @@ impl TestReport {
         info!(target: "Test Report", "{} gateways speak ONLY IPv6 (NO IPv4 connectivity)", self.only_ipv6_compatible_gateways.len());
         info!(target: "Test Report", "{} gateways are totally unroutable!", self.completely_unroutable_gateways.len());
         info!(target: "Test Report", "{} gateways work fine!", self.fully_working_gateways.len());
+
+        use std::io::Write;
+        let mut file = File::create("/home/jedrzej/workspace/results/malformed").unwrap();
+
+        for malformed in self.malformed.iter() {
+            write!(file, "{}", malformed).unwrap()
+        }
+
+        let mut file = File::create("/home/jedrzej/workspace/results/v4-only").unwrap();
+
+        for v4_node in self.only_ipv4_compatible_mixes.iter() {
+            write!(file, "{}", v4_node).unwrap()
+        }
+
+        let mut file = File::create("/home/jedrzej/workspace/results/v6-only").unwrap();
+
+        for v6_node in self.only_ipv6_compatible_mixes.iter() {
+            write!(file, "{}", v6_node).unwrap()
+        }
+
+        let mut file = File::create("/home/jedrzej/workspace/results/fucked").unwrap();
+
+        for unroutable in self.completely_unroutable_mixes.iter() {
+            write!(file, "{}", unroutable).unwrap()
+        }
+
+        let mut file = File::create("/home/jedrzej/workspace/results/working").unwrap();
+
+        for working in self.fully_working_mixes.iter() {
+            write!(file, "{}", working).unwrap()
+        }
 
         if detailed {
             info!(target: "Detailed report", "full summary:");
