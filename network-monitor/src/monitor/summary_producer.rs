@@ -79,28 +79,36 @@ impl TestReport {
             writeln!(file, "{}", malformed).unwrap()
         }
 
-        let mut file = File::create(format!("{}/v4-only", OUTPUT_DIR)).unwrap();
+        let mut file_id = File::create(format!("{}/v4-only", OUTPUT_DIR)).unwrap();
+        let mut file_owner = File::create(format!("{}/v4-only-owners", OUTPUT_DIR)).unwrap();
 
         for v4_node in self.only_ipv4_compatible_mixes.iter() {
-            writeln!(file, "{}", v4_node).unwrap()
+            writeln!(file_id, "{}", v4_node.identity).unwrap();
+            writeln!(file_owner, "{}", v4_node.owner).unwrap();
         }
 
-        let mut file = File::create(format!("{}/v6-only", OUTPUT_DIR)).unwrap();
+        let mut file_id = File::create(format!("{}/v6-only", OUTPUT_DIR)).unwrap();
+        let mut file_owner = File::create(format!("{}/v6-only-owners", OUTPUT_DIR)).unwrap();
 
         for v6_node in self.only_ipv6_compatible_mixes.iter() {
-            writeln!(file, "{}", v6_node).unwrap()
+            writeln!(file_id, "{}", v6_node.identity).unwrap();
+            writeln!(file_owner, "{}", v6_node.owner).unwrap();
         }
 
-        let mut file = File::create(format!("{}/fucked", OUTPUT_DIR)).unwrap();
+        let mut file_id = File::create(format!("{}/fucked", OUTPUT_DIR)).unwrap();
+        let mut file_owner = File::create(format!("{}/fucked-owners", OUTPUT_DIR)).unwrap();
 
         for unroutable in self.completely_unroutable_mixes.iter() {
-            writeln!(file, "{}", unroutable).unwrap()
+            writeln!(file_id, "{}", unroutable.identity).unwrap();
+            writeln!(file_owner, "{}", unroutable.owner).unwrap();
         }
 
-        let mut file = File::create(format!("{}/working", OUTPUT_DIR)).unwrap();
+        let mut file_id = File::create(format!("{}/working", OUTPUT_DIR)).unwrap();
+        let mut file_owner = File::create(format!("{}/working-owners", OUTPUT_DIR)).unwrap();
 
         for working in self.fully_working_mixes.iter() {
-            writeln!(file, "{}", working).unwrap()
+            writeln!(file_id, "{}", working.identity).unwrap();
+            writeln!(file_owner, "{}", working.owner).unwrap();
         }
 
         if detailed {

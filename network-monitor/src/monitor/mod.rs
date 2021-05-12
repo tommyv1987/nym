@@ -112,7 +112,7 @@ impl Monitor {
     pub(crate) async fn run(&mut self) {
         self.test_run().await;
         sleep(Duration::from_secs(5)).await;
-        info!("We're done! Ignore the panic. It's all fine");
+        info!("We're done! Ignore the panic. It's all fine\n\n\n");
         // let mut interval = interval_at(Instant::now(), MONITOR_RUN_INTERVAL);
         // loop {
         //     // let run_deadline = delay_for(MONITOR_RUN_INTERVAL);
