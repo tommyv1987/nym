@@ -10,6 +10,9 @@ use log::*;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 
+// CHANGE THIS \/
+const OUTPUT_DIR: &str = "/home/jedrzej/workspace/results";
+
 #[derive(Default)]
 struct NodeResult {
     ip_v4_compatible: bool,
@@ -69,31 +72,31 @@ impl TestReport {
         info!(target: "Test Report", "{} gateways work fine!", self.fully_working_gateways.len());
 
         use std::io::Write;
-        let mut file = File::create("/home/jedrzej/workspace/results/malformed").unwrap();
+        let mut file = File::create(format!("{}/malformed", OUTPUT_DIR)).unwrap();
 
         for malformed in self.malformed.iter() {
             write!(file, "{}", malformed).unwrap()
         }
 
-        let mut file = File::create("/home/jedrzej/workspace/results/v4-only").unwrap();
+        let mut file = File::create(format!("{}/v4-only", OUTPUT_DIR)).unwrap();
 
         for v4_node in self.only_ipv4_compatible_mixes.iter() {
             write!(file, "{}", v4_node).unwrap()
         }
 
-        let mut file = File::create("/home/jedrzej/workspace/results/v6-only").unwrap();
+        let mut file = File::create(format!("{}/v6-only", OUTPUT_DIR)).unwrap();
 
         for v6_node in self.only_ipv6_compatible_mixes.iter() {
             write!(file, "{}", v6_node).unwrap()
         }
 
-        let mut file = File::create("/home/jedrzej/workspace/results/fucked").unwrap();
+        let mut file = File::create(format!("{}/fucked", OUTPUT_DIR)).unwrap();
 
         for unroutable in self.completely_unroutable_mixes.iter() {
             write!(file, "{}", unroutable).unwrap()
         }
 
-        let mut file = File::create("/home/jedrzej/workspace/results/working").unwrap();
+        let mut file = File::create(format!("{}/working", OUTPUT_DIR)).unwrap();
 
         for working in self.fully_working_mixes.iter() {
             write!(file, "{}", working).unwrap()
