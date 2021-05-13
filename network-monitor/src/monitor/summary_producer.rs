@@ -10,7 +10,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs::File;
 
 // CHANGE THIS \/
-const OUTPUT_DIR: &str = "/home/jedrzej/workspace/results";
+const OUTPUT_DIR: &str = "/tmp/results";
 
 #[derive(Default)]
 struct NodeResult {
