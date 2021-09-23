@@ -49,6 +49,7 @@ members = [
     "mixnode",
     "service-providers/network-requester",
     "validator-api",
+    "tokenomics-py"
 ]
 
 default-members = [
