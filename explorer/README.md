@@ -36,6 +36,10 @@ The output will be in the `dist` directory. Serve this with `nginx` or `httpd`.
 Make sure you have built the [explorer-api](./explorer-api) and are running it as a service proxied through 
 `nginx` or `httpd` so that both the UI and API are running on the same host. 
 
+## Continuous Integration
+
+A GitHub Action `network-explorer.yml` builds this directory and deploys it to a staging server.
+
 ## License
 
 Please see https://github.com/nymtech/nym for license details for all Nym software.
