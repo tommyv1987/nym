@@ -40,6 +40,7 @@ Make sure you have built the [explorer-api](./explorer-api) and are running it a
 
 A GitHub Action `network-explorer.yml` builds this directory and deploys it to a staging server.
 
+
 ## License
 
 Please see https://github.com/nymtech/nym for license details for all Nym software.
