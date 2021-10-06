@@ -1,6 +1,8 @@
 // Copyright 2021 - Nym Technologies SA <contact@nymtech.net>
 // SPDX-License-Identifier: Apache-2.0
 
+use std::u128;
+
 use crate::helpers::calculate_epoch_reward_rate;
 use crate::state::State;
 use crate::storage::{config, layer_distribution};
@@ -121,7 +123,10 @@ pub fn execute(
             identity,
             uptime,
             performance,
-        } => transactions::try_reward_mixnode_v2(deps, env, info, identity, uptime, performance),
+            active_set_size,
+            total_mix_stake,
+            income_global_mix
+        } => transactions::try_reward_mixnode_v2(deps, env, info, identity, uptime, performance, active_set_size as f64, total_mix_stake, income_global_mix),
         ExecuteMsg::RewardGateway { identity, uptime } => {
             transactions::try_reward_gateway(deps, env, info, identity, uptime)
         }

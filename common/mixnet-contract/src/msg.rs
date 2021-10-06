@@ -3,7 +3,7 @@
 
 use crate::StateParams;
 use crate::{Gateway, IdentityKey, MixNode};
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -50,6 +50,9 @@ pub enum ExecuteMsg {
         // percentage value in range 0-100
         uptime: u32,
         performance: f64,
+        active_set_size: u32,
+        total_mix_stake: Uint128,
+        income_global_mix: f64,
     },
 
     RewardGateway {
