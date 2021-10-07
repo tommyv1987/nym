@@ -1,9 +1,10 @@
 // Copyright 2021 - Nym Technologies SA <contact@nymtech.net>
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::mixnode::NodeRewardParams;
 use crate::StateParams;
 use crate::{Gateway, IdentityKey, MixNode};
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -48,11 +49,7 @@ pub enum ExecuteMsg {
     RewardMixnodeV2 {
         identity: IdentityKey,
         // percentage value in range 0-100
-        uptime: u32,
-        performance: f64,
-        active_set_size: u32,
-        total_mix_stake: Uint128,
-        income_global_mix: f64,
+        params: NodeRewardParams,
     },
 
     RewardGateway {
@@ -119,6 +116,7 @@ pub enum QueryMsg {
     LayerDistribution {},
     GetTotalMixStake {},
     GetTotalGatewayStake {},
+    GetInflationPool {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

@@ -3,6 +3,7 @@
 
 use crate::error::MixnetContractError;
 use crate::{IdentityKey, SphinxKey};
+use config::defaults::{ALPHA, DEFAULT_OPERATOR_EPOCH_COST};
 use cosmwasm_std::{coin, Addr, Coin, Uint128};
 use num::rational::Ratio;
 use num::ToPrimitive;
@@ -40,42 +41,47 @@ pub enum Layer {
     Three = 3,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, JsonSchema, PartialEq, Serialize, Deserialize, Copy)]
 pub struct NodeRewardParams {
-    alpha: f64,
     income_global_mix: f64,
     k: f64,
-    performance: f64,
-    total_mix_stake: Uint128,
-    operator_cost: f64,
-    reward_blockstamp: u64,
     one_over_k: f64,
+    performance: f64,
+    reward_blockstamp: Option<u64>,
+    total_mix_stake: Uint128,
+    uptime: f64,
 }
 
 impl NodeRewardParams {
     pub fn new(
-        alpha: f64,
         income_global_mix: f64,
         k: f64,
         performance: f64,
-        total_mix_stake: Uint128,
-        operator_cost: f64,
-        reward_blockstamp: u64,
+        reward_blockstamp: Option<u64>,
+        total_mix_stake: u128,
+        uptime: f64,
     ) -> NodeRewardParams {
         NodeRewardParams {
-            alpha,
             income_global_mix,
             k,
-            performance,
-            total_mix_stake,
-            operator_cost,
-            reward_blockstamp,
             one_over_k: 1. / k,
+            performance,
+            reward_blockstamp,
+            total_mix_stake: Uint128(total_mix_stake),
+            uptime,
         }
     }
 
+    pub fn operator_cost(&self) -> f64 {
+        self.uptime / 100. * DEFAULT_OPERATOR_EPOCH_COST as f64
+    }
+
+    pub fn set_reward_blockstamp(&mut self, blockstamp: u64) {
+        self.reward_blockstamp = Some(blockstamp);
+    }
+
     pub fn alpha(&self) -> f64 {
-        self.alpha
+        ALPHA
     }
 
     pub fn income_global_mix(&self) -> f64 {
@@ -94,12 +100,9 @@ impl NodeRewardParams {
         self.total_mix_stake
     }
 
-    pub fn operator_cost(&self) -> f64 {
-        self.operator_cost
-    }
-
-    pub fn reward_blockstamp(&self) -> u64 {
+    pub fn reward_blockstamp(&self) -> Result<u64, MixnetContractError> {
         self.reward_blockstamp
+            .ok_or(MixnetContractError::BlockstampNotSet)
     }
 
     pub fn one_over_k(&self) -> f64 {
@@ -249,8 +252,8 @@ impl MixNodeBond {
         let sigma = self.sigma(params)?;
         let reward = params.performance
             * params.income_global_mix
-            * (sigma * omega_k + params.alpha * lambda * (sigma * params.k))
-            / (1. + params.alpha);
+            * (sigma * omega_k + params.alpha() * lambda * (sigma * params.k))
+            / (1. + params.alpha());
 
         Ok(NodeRewardResult {
             reward,
@@ -260,12 +263,12 @@ impl MixNodeBond {
     }
 
     pub fn node_profit(&self, params: &NodeRewardParams) -> Result<f64, MixnetContractError> {
-        Ok(self.reward(params)?.reward() - params.operator_cost)
+        Ok(self.reward(params)?.reward() - params.operator_cost())
     }
 
     pub fn operator_profit(&self, params: &NodeRewardParams) -> Result<f64, MixnetContractError> {
         let reward_result = self.reward(params)?;
-        let profit = reward_result.reward() - params.operator_cost;
+        let profit = reward_result.reward() - params.operator_cost();
         Ok(((self.profit_margin()
             + (1. - self.profit_margin()) * (reward_result.lambda() / reward_result.sigma()))
             * profit)
@@ -288,10 +291,12 @@ impl MixNodeBond {
         let scaled_delegation_amount =
             Ratio::new(delegation_amount.u128(), params.total_mix_stake.u128())
                 .to_f64()
-                .ok_or(MixnetContractError::InvalidRatio(
-                    delegation_amount.u128(),
-                    params.total_mix_stake.u128(),
-                ))?;
+                .ok_or_else(|| {
+                    MixnetContractError::InvalidRatio(
+                        delegation_amount.u128(),
+                        params.total_mix_stake.u128(),
+                    )
+                })?;
 
         let delegation_over_sigma_f64 = scaled_delegation_amount / self.sigma(params)?;
         // If we can't resolve the ration we move on, and the delegation does not get rewarded

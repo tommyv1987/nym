@@ -1,6 +1,5 @@
 // Copyright 2021 - Nym Technologies SA <contact@nymtech.net>
 // SPDX-License-Identifier: Apache-2.0
-use crate::contract::ALPHA;
 use crate::error::ContractError;
 use crate::helpers::{calculate_epoch_reward_rate, scale_reward_by_uptime, Delegations};
 use crate::queries;
@@ -461,11 +460,7 @@ pub(crate) fn try_reward_mixnode_v2(
     env: Env,
     info: MessageInfo,
     mix_identity: IdentityKey,
-    uptime: u32,
-    performance: f64,
-    k: f64,
-    total_mix_stake: Uint128,
-    income_global_mix: f64,
+    params: NodeRewardParams
 ) -> Result<Response, ContractError> {
     let state = config_read(deps.storage).load().unwrap();
 
@@ -485,21 +480,14 @@ pub(crate) fn try_reward_mixnode_v2(
         }
     };
 
-    let reward_params = NodeRewardParams::new(
-        ALPHA,
-        income_global_mix,
-        k,
-        performance,
-        total_mix_stake,
-        price_for_uptime(uptime),
-        env.block.height,
-    );
+    let mut reward_params = params;
+    reward_params.set_reward_blockstamp(env.block.height);
+
     let reward_result = current_bond.reward(&reward_params)?;
 
     // Omitting the price per packet function now, it follows that base operator reward is the node_reward
     let operator_profit = current_bond.operator_profit(&reward_params)?;
-
-    let operator_base_reward = reward_result.reward().min(price_for_uptime(uptime));
+    let operator_base_reward = reward_result.reward().min(params.operator_cost());
     let total_operator_reward = Uint128((operator_base_reward + operator_profit) as u128);
 
     let total_delegation_reward =
@@ -510,7 +498,7 @@ pub(crate) fn try_reward_mixnode_v2(
     // update current bond with the reward given to the node and the delegators
     // if it has been bonded for long enough
     if current_bond.block_height + MINIMUM_BLOCK_AGE_FOR_REWARDING
-        <= reward_params.reward_blockstamp()
+        <= reward_params.reward_blockstamp()?
     {
         current_bond.bond_amount.amount += total_operator_reward;
         current_bond.total_delegation.amount += total_delegation_reward;
@@ -4227,7 +4215,6 @@ pub mod tests {
         let mut env = mock_env();
         let current_state = config(deps.as_mut().storage).load().unwrap();
         let network_monitor_address = current_state.network_monitor_address;
-        let alpha = 0.3;
         let income_global_mix = 17500_000000;
         let k = 5.;
         mut_inflation_pool(deps.as_mut().storage)
@@ -4334,37 +4321,37 @@ pub mod tests {
         let mix_1 = mixnodes_read(&deps.storage).load(b"mix_1").unwrap();
         let mix_1_uptime = 100;
         let mix_1_performance = mix_1_uptime as f64 / total_uptime;
-        let mix_1_price_for_uptime = price_for_uptime(mix_1_uptime);
 
-        let mix_reward_params = NodeRewardParams::new(
-            alpha,
+        let mut params = NodeRewardParams::new(
             income_global_mix as f64,
             k,
             mix_1_performance,
-            total_mix_stake,
-            mix_1_price_for_uptime,
-            env.block.height,
+            None,
+            total_mix_stake.u128(),
+            mix_1_uptime as f64
         );
 
-        let mix_1_reward_result = mix_1.reward(&mix_reward_params).unwrap();
+        params.set_reward_blockstamp(env.block.height);
+
+        let mix_1_reward_result = mix_1.reward(&params).unwrap();
 
         assert_eq!(mix_1_reward_result.sigma(), 0.2);
         assert_eq!(mix_1_reward_result.lambda(), 0.18181818181818182);
         assert_eq!(mix_1_reward_result.reward(), 901729849.09827);
 
-        let mix1_operator_profit = mix_1.operator_profit(&mix_reward_params).unwrap();
+        let mix1_operator_profit = mix_1.operator_profit(&params).unwrap();
 
         let mix1_delegator1_reward = mix_1
-            .reward_delegation(Uint128(10_000000), &mix_reward_params)
+            .reward_delegation(Uint128(10_000000), &params)
             .unwrap();
 
         let mix1_delegator2_reward = mix_1
-            .reward_delegation(Uint128(20_000000), &mix_reward_params)
+            .reward_delegation(Uint128(20_000000), &params)
             .unwrap();
 
-        assert_eq!(mix1_delegator1_reward.u128(), 70505169);
-        assert_eq!(mix1_delegator2_reward.u128(), 141010338);
-        assert_eq!(mix1_operator_profit, 791224679.6265934);
+        assert_eq!(mix1_delegator1_reward.u128(), 73668805);
+        assert_eq!(mix1_delegator2_reward.u128(), 147337611);
+        assert_eq!(mix1_operator_profit, 826727710.2356843);
 
         let pre_reward_bond = read_mixnode_bond(&deps.storage, b"mix_1").unwrap().u128();
         assert_eq!(pre_reward_bond, 100_000000);
@@ -4379,29 +4366,25 @@ pub mod tests {
             env,
             info,
             "mix_1".to_string(),
-            mix_1_uptime,
-            mix_1_performance,
-            k,
-            total_mix_stake,
-            income_global_mix as f64,
+            params
         )
         .unwrap();
 
         assert_eq!(
             read_mixnode_bond(&deps.storage, b"mix_1").unwrap().u128(),
-            pre_reward_bond + mix1_operator_profit as u128 + mix_1_price_for_uptime as u128
+            pre_reward_bond + mix1_operator_profit as u128 + params.operator_cost() as u128
         );
         assert_eq!(
             read_mixnode_delegation(&deps.storage, b"mix_1")
                 .unwrap()
                 .u128(),
-            241515507
+                251006416
         );
         assert_eq!(
             total_mix_stake_value(&deps.storage).u128(),
             total_mix_stake.u128()
                 + mix1_operator_profit as u128
-                + mix_1_price_for_uptime as u128
+                + params.operator_cost() as u128
                 + mix1_delegator1_reward.u128()
                 + mix1_delegator2_reward.u128()
         );
@@ -4410,7 +4393,7 @@ pub mod tests {
             inflation_pool_value(&deps.storage).u128(),
             income_global_mix
                 - (mix1_operator_profit as u128
-                    + mix_1_price_for_uptime as u128
+                    + params.operator_cost() as u128
                     + mix1_delegator1_reward.u128()
                     + mix1_delegator2_reward.u128())
         )

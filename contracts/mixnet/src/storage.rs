@@ -1,6 +1,6 @@
 // Copyright 2021 - Nym Technologies SA <contact@nymtech.net>
 // SPDX-License-Identifier: Apache-2.0
-use crate::contract::{DEFAULT_COST_PER_EPOCH, INITIAL_INFLATION_POOL};
+use crate::contract::INITIAL_INFLATION_POOL;
 use crate::state::State;
 use crate::transactions::MINIMUM_BLOCK_AGE_FOR_REWARDING;
 use crate::{error::ContractError, queries};
@@ -320,10 +320,6 @@ pub(crate) fn increase_mix_delegated_stakes(
     Ok(total_rewarded)
 }
 
-pub(crate) fn price_for_uptime(uptime: u32) -> f64 {
-    uptime as f64 / 100. * DEFAULT_COST_PER_EPOCH as f64
-}
-
 pub(crate) fn increase_mix_delegated_stakes_v2(
     storage: &mut dyn Storage,
     bond: &MixNodeBond,
@@ -360,7 +356,7 @@ pub(crate) fn increase_mix_delegated_stakes_v2(
         // if at least `MINIMUM_BLOCK_AGE_FOR_REWARDING` blocks have been created
         // since they delegated
         for (delegator_address, mut delegation) in delegations_chunk.into_iter() {
-            if delegation.block_height + MINIMUM_BLOCK_AGE_FOR_REWARDING <= params.reward_blockstamp() {
+            if delegation.block_height + MINIMUM_BLOCK_AGE_FOR_REWARDING <= params.reward_blockstamp()? {
                 let reward = bond.reward_delegation(delegation.amount, params)?;
                 delegation.amount += reward;
                 total_rewarded += reward;
