@@ -1,0 +1,5 @@
+reports
+node_modules
+.vscode
+.idea
+allure-report

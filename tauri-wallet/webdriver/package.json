@@ -1,0 +1,24 @@
+{
+  "name": "tauri_nym_wallet",
+  "version": "1.0.0",
+  "private": false,
+  "license": "MIT",
+  "scripts": {
+    "test": "wdio run wdio.conf.js",
+    "test:sendreceive" : "wdio run wdio.conf.js --suite sendAndReceive",
+    "test:login" : "wdio run wdio.conf.js --suite login",
+    "test:bond" : "wdio run wdio.conf.js --suite bond",
+    "test:delegate" : "wdio run wdio.conf.js --suite delegate"
+  },
+  "dependencies": {
+    "@wdio/cli": "^7.9.1",
+    "@zxing/browser": "^0.0.9",
+    "webdriverio": "^7.14.1"
+  },
+  "devDependencies": {
+    "@wdio/devtools-service": "^6.3.7",
+    "@wdio/local-runner": "^7.9.1",
+    "@wdio/mocha-framework": "^7.9.1",
+    "@wdio/spec-reporter": "^7.9.0"
+  }
+}
