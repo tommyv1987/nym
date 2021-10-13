@@ -9,21 +9,20 @@ let tauriDriver;
 exports.config = {
   //run sequentially, as using one default user may cause issues
   specs: [
-    "./tests/specs/test.wallet.home.js",
-    "./tests/specs/test.wallet.send.js",
-    "./tests/specs/test.wallet.receive.js",
-    "./tests/specs/test.wallet.bond.js",
-    "./tests/specs/test.wallet.delegate.js"],
+    "./tests/specs/existinguser/test.wallet.home.js",
+    "./tests/specs/existinguser/test.wallet.send.js",
+    "./tests/specs/existinguser/test.wallet.receive.js",
+    "./tests/specs/existinguser/test.wallet.bond.js",
+    "./tests/specs/existinguser/test.wallet.delegate.js"],
   
    //run tests by providing --suite {{login}} 
   suites: {
-    login: ["./tests/specs/test.wallet.home.js"],
-    sendAndReceive: ["./tests/specs/test.wallet.send.js", 
-                    "./tests/specs/test.wallet.receive.js"],
-    bond: ["./tests/specs/test.wallet.bond.js"],
-    delegate: ["./tests/specs/test.wallet.delegate.js"]
+    login: ["./tests/specs/existinguser/test.wallet.home.js"],
+    sendAndReceive: ["./tests/specs/existinguser/test.wallet.send.js", 
+                    "./tests/specs/existinguser/test.wallet.receive.js"],
+    bond: ["./tests/specs/existinguser/test.wallet.bond.js"],
+    delegate: ["./tests/specs/existinguser/test.wallet.delegate.js"]
   },
-  bail: 0,
   maxInstances: 1,
   capabilities: [
     {

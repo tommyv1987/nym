@@ -1,7 +1,7 @@
-const userData = require('../../common/data/user-data');
-const helper = require('../../common/helpers/helper');
-const walletLogin = require('../pages/wallet.login');
-const textConstants = require('../../common/constants/text-constants');
+const userData = require('../../../common/data/user-data');
+const helper = require('../../../common/helpers/helper');
+const walletLogin = require('../../pages/wallet.login');
+const textConstants = require('../../../common/constants/text-constants');
 
 describe("Simple navigational and input tests on the wallet home page", () => {
   it("should have the sign in header", async () => {
