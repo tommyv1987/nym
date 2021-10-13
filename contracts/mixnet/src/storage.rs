@@ -31,9 +31,9 @@ const TOTAL_GATEWAY_STAKE_KEY: &[u8] = b"total_gt";
 const INFLATION_POOL_PREFIX: &[u8] = b"pool";
 
 // buckets
-const PREFIX_MIXNODES: &[u8] = b"mn";
+pub const PREFIX_MIXNODES: &[u8] = b"mn";
 const PREFIX_MIXNODES_OWNERS: &[u8] = b"mo";
-const PREFIX_GATEWAYS: &[u8] = b"gt";
+pub const PREFIX_GATEWAYS: &[u8] = b"gt";
 const PREFIX_GATEWAYS_OWNERS: &[u8] = b"go";
 
 const PREFIX_MIX_DELEGATION: &[u8] = b"md";
