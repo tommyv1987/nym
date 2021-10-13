@@ -1,6 +1,6 @@
 class Helpers {
 
-    //helper to decode mnemonic so plain 24 character passphrase isn't insight albeit it is presented when ruunning the scripts
+    //helper to decode mnemonic so plain 24 character passphrase isn't in sight albeit it is presented when ruunning the scripts
     //maybe a show passphrase toggle button?
     decodeBase = async (input) => {
         var m = Buffer.from(input, 'base64').toString();
@@ -20,6 +20,7 @@ class Helpers {
         return parseFloat(value.split(/\s+/)[0].toString()).toFixed(5);
     }
 
+    //this can be better - todo (fix)
     calculateFees = async (beforeBalance, transactionFee, amount) => {
         const fee = transactionFee.split(/\s+/)[3].toString();
         const currentBalance = beforeBalance.split(/\s+/)[0].toString();

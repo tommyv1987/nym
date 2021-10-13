@@ -56,4 +56,31 @@ describe("delegate to a mix node or gateway", () => {
         expect(await helper.currentBalance(availablePunk)).toEqual(sumCost);
 
     })
+    //currently skipping, investigating gateway bonding
+    it.skip("input gateway amount and stake then check account balances", async () => {
+        const balanceText = await delegatePage.accountBalance.getText();
+
+        const getTransfeeAmount = await delegatePage.transactionFeeAmount.getText();
+
+        await delegatePage.gateWayRadioButton.click();
+
+        await delegatePage.nodeIdentity.setValue(userData.identity_key_to_delegate_gateway);
+
+        await delegatePage.amountToDelegate.setValue(userData.delegate_amount);
+
+        //transfer fee + amount delegation
+        const sumCost = await helper.calculateFees(balanceText, getTransfeeAmount, userData.delegate_amount);
+
+        await delegatePage.delegateStakeButton.click();
+
+        await delegatePage.finishSuccessDelegation.waitForClickable({ timeout: 10000 });
+
+        const getConfirmationText = await delegatePage.successfullyDelegate.getText();
+        expect(getConfirmationText).toContain(textConstants.delegationComplete);
+
+        const availablePunk = await delegatePage.accountBalance.getText();
+        //expect new account balance - the fee calculation above
+        expect(await helper.currentBalance(availablePunk)).toEqual(sumCost);
+
+    })
 });
