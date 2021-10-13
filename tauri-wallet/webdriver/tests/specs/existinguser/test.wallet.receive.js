@@ -1,4 +1,4 @@
-const userData = require('../../common/user-data');
+const userData = require('../../common/data/user-data');
 const textConstants = require('../../common/constants/text-constants');
 const helper = require('../../common/helpers/helper');
 const walletLogin = require('../pages/wallet.login');
