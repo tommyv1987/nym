@@ -17,13 +17,21 @@ Currently, tauri-driver is available to run on Windows and Linux machines.
 * `Rust & cargo >= v1.51`
 * `tauri-driver`
 * `That you have an existing mnemonic and you can login to the app`
-* `have the details listed below to provide the user-data.js file`
+* `Have the details listed below to provide the user-data.js file`
 
 
 ## Key Information
 * Please read the instructions on the `nym/tauri-wallet/README.md` in the root of the project on how to build the application
-* Be on an OS of your choice which is capable of launching tauri driver - (for more information please visit [Tauri Studio](https://tauri.studio/en/docs/usage/guides/webdriver/introduction)
-this will specify the additional drivers you need if you do need them)
+* Please ensure you have the relevant Webdriver kits installed on your machine -
+```
+linux:
+ sudo apt-get install -y webkit2gtk-driver 
+ ```
+ ```
+ windows: 
+download msedgedriver.exe from https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/
+```
+please visit [Tauri Studio](https://tauri.studio/en/docs/usage/guides/webdriver/introduction), this will specify the additional drivers you need)
 * The path to run the application is set in the `wdio.conf.js` which lives in the root directory 
 * Before running the suite you need to build the application and check that the application has
 built successfully, if so, you will have an executable sitting in the target directory in `src-tauri/*/nym_wallet` (refer to point 1)
@@ -47,7 +55,7 @@ example:
       "delegate_amount" : "1"
       }
 ```
-*  `yarn test` - the first test run will take some time to spin up be patient
+*  `yarn test:runall` - the first test run will take some time to spin up be patient
 *   You can run tests individually by passing through the script situated in the package.json for example `yarn test:delegate` 
 
 ## Updates
