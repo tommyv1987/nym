@@ -28,6 +28,10 @@ class WalletLogin {
         return $("#root > div > div:nth-child(1) > div:nth-child(3) > div:nth-child(2) > div > div.MuiCardContent-root > div > p");
     }
 
+    get createNewAccount(){
+        return $("#root > div > div:nth-child(2) > div > form > div > div:nth-child(3) > a");
+    }
+
     //login to the application
     enterMnemonic = async(mnemonic) => {
         await this.mnemonic.addValue(mnemonic);

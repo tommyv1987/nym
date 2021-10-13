@@ -1,6 +1,4 @@
 module.exports = {
-    //WIP
-
     //receivePage
     "recievePageInformation" : "You can receive tokens by providing this address to the sender",
     "receivePageHeaderText": "Receive Nym",
@@ -11,6 +9,7 @@ module.exports = {
     //homePage
     "homePageErrorMnemonic": "Error parsing bip39 mnemonic",
     "homePageSignIn" : "Sign in",
+    "createOne" : "Create one",
     
     //bondPage // unbondPage
     "bondAlreadyNoded" : "Looks like you already have a mixnode bonded.",
@@ -20,13 +19,11 @@ module.exports = {
 
     //balancePage
 
-    //docsPage
-
     //delegatePage // undelegatePage
     "delegateHeaderText" : "Delegate to mixnode or gateway",
     "nodeIdentityValidationText" : "identity is a required field",
     "amountValidationText": "amount is a required field",
-    "transferFeeAmount" : "A fee of 0.004375 PUNK will apply to this transaction",
+    //"transferFeeAmount" : "A fee of 0.004375 PUNK will apply to this transaction",
     "undelegateHeaderText" : "Undelegate from a mixnode or gateway",
     "delegationComplete" : "Delegation complete"
 }

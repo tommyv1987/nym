@@ -41,7 +41,7 @@ class WalletHome {
     }
 
     get logOutButton(){
-        return $("#root > div > div:nth-child(1) > div:nth-child(4) > div > ul > a:nth-child(9) > div.MuiListItemText-root > span");
+        return $("#root > div > div:nth-child(1) > div:nth-child(4) > div > ul > div > div.MuiListItemText-root > span");
     }
 
 }

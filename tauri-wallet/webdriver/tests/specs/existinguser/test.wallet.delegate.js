@@ -32,7 +32,7 @@ describe("delegate to a mix node or gateway", () => {
         expect(getAmountValidation).toEqual(textConstants.amountValidationText);
     })
 
-    it("input delegate amount and stake and check account balances", async () => {
+    it("input delegate amount and stake whilst checking account balances", async () => {
         const balanceText = await delegatePage.accountBalance.getText();
 
         const getTransfeeAmount = await delegatePage.transactionFeeAmount.getText();

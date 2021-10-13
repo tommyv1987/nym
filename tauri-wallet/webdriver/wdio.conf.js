@@ -7,7 +7,7 @@ const nym_path = "../target/release/tauri-wallet";
 let tauriDriver;
 
 exports.config = {
-  //run sequentially, as using one default user may cause issues
+  //run sequentially, as using one default user may cause issues for parallel test runs for now
   specs: [
     "./tests/specs/existinguser/test.wallet.home.js",
     "./tests/specs/existinguser/test.wallet.send.js",
@@ -21,7 +21,8 @@ exports.config = {
     sendAndReceive: ["./tests/specs/existinguser/test.wallet.send.js", 
                     "./tests/specs/existinguser/test.wallet.receive.js"],
     bond: ["./tests/specs/existinguser/test.wallet.bond.js"],
-    delegate: ["./tests/specs/existinguser/test.wallet.delegate.js"]
+    delegate: ["./tests/specs/existinguser/test.wallet.delegate.js",
+              "./tests/specs/existinguser/test.wallet.undelegate.js"]
   },
   maxInstances: 1,
   capabilities: [
