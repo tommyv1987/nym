@@ -227,11 +227,11 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<QueryResponse, Cont
 #[entry_point]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     use crate::storage::{
-        gateways_read, incr_total_gateway_stake, incr_total_mix_stake, PREFIX_MIXNODES, mixnodes
+        gateways_read, incr_total_gateway_stake, incr_total_mix_stake, mixnodes, PREFIX_MIXNODES,
     };
-    use cosmwasm_std::{Order, StdResult, Coin};
+    use cosmwasm_std::{Coin, Order, StdResult};
     use cosmwasm_storage::bucket_read;
-    use mixnet_contract::{GatewayBond, MixNodeBond, Layer};
+    use mixnet_contract::{GatewayBond, Layer, MixNodeBond};
     use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Deserialize)]
@@ -253,15 +253,17 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
                 layer: o.layer,
                 block_height: o.block_height,
                 mix_node: o.mix_node,
-                profit_margin_percent: None
+                profit_margin_percent: None,
             }
         }
     }
 
     let mixnode_bonds = bucket_read(deps.storage, PREFIX_MIXNODES)
         .range(None, None, Order::Ascending)
-        .take_while(Result::is_ok).map(Result::unwrap)
-        .map(|(key, bond): (Vec<u8>, OldMixNodeBond)|(key, bond.into())).collect::<Vec<(Vec<u8>, MixNodeBond)>>();
+        .take_while(Result::is_ok)
+        .map(Result::unwrap)
+        .map(|(key, bond): (Vec<u8>, OldMixNodeBond)| (key, bond.into()))
+        .collect::<Vec<(Vec<u8>, MixNodeBond)>>();
 
     for (key, bond) in mixnode_bonds {
         incr_total_mix_stake(bond.bond_amount().amount, deps.storage)?;
