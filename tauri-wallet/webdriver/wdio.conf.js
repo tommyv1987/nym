@@ -23,6 +23,7 @@ exports.config = {
     bond: ["./tests/specs/test.wallet.bond.js"],
     delegate: ["./tests/specs/test.wallet.delegate.js"]
   },
+  bail: 0,
   maxInstances: 1,
   capabilities: [
     {
