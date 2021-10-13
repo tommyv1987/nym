@@ -627,7 +627,7 @@ mod tests {
                 identity_key: node_identity.clone(),
                 ..mix_node_fixture()
             },
-            profit_margin_percent: None,
+            profit_margin_percent: 10,
         };
 
         mixnodes(&mut storage)
