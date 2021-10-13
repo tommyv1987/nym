@@ -4,11 +4,12 @@
   "private": false,
   "license": "MIT",
   "scripts": {
-    "test": "wdio run wdio.conf.js",
+    "test:runall": "wdio run wdio.conf.js",
     "test:sendreceive" : "wdio run wdio.conf.js --suite sendAndReceive",
     "test:login" : "wdio run wdio.conf.js --suite login",
     "test:bond" : "wdio run wdio.conf.js --suite bond",
-    "test:delegate" : "wdio run wdio.conf.js --suite delegate"
+    "test:delegate" : "wdio run wdio.conf.js --suite delegate",
+    "test:newaccounts" : "wdio run wdio.conf.js --suite nonExsistingUser"
   },
   "dependencies": {
     "@wdio/cli": "^7.9.1",

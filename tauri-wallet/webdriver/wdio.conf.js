@@ -13,7 +13,8 @@ exports.config = {
     "./tests/specs/existinguser/test.wallet.send.js",
     "./tests/specs/existinguser/test.wallet.receive.js",
     "./tests/specs/existinguser/test.wallet.bond.js",
-    "./tests/specs/existinguser/test.wallet.delegate.js"],
+    "./tests/specs/existinguser/test.wallet.delegate.js",
+      "./tests/specs/newuser/test.wallet.create.js"],
   
    //run tests by providing --suite {{login}} 
   suites: {
@@ -22,7 +23,8 @@ exports.config = {
                     "./tests/specs/existinguser/test.wallet.receive.js"],
     bond: ["./tests/specs/existinguser/test.wallet.bond.js"],
     delegate: ["./tests/specs/existinguser/test.wallet.delegate.js",
-              "./tests/specs/existinguser/test.wallet.undelegate.js"]
+              "./tests/specs/existinguser/test.wallet.undelegate.js"],
+    nonExsistingUser : ["./tests/specs/newuser/test.wallet.create.js"]
   },
   maxInstances: 1,
   capabilities: [
